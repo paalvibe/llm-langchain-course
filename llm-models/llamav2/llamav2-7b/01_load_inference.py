@@ -124,7 +124,7 @@ print(results[0])
 
 # COMMAND ----------
 
-# Check that the generation quality when the context is long
+# Check the generation quality when the context is long
 
 long_input = """Provide a concise summary of the below passage.
 
