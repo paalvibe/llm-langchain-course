@@ -2,6 +2,8 @@
 # MAGIC %md
 # MAGIC ## Fine-Tuning with t5-small
 # MAGIC
+# MAGIC Based on blogpost https://www.databricks.com/blog/2023/03/20/fine-tuning-large-language-models-hugging-face-and-deepspeed.html
+# MAGIC
 # MAGIC This demonstrates basic fine-tuning with the `t5-small` model. This notebook should be run on an instance with 1 Ampere architecture GPU, such as an A10. Use Databricks Runtime 12.2 ML GPU or higher.
 # MAGIC
 # MAGIC This requires a few additional Python libraries, including an update to the very latest `transformers`, and additional CUDA tools:
