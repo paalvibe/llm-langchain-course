@@ -35,7 +35,7 @@
 # MAGIC 3. Upload the file to a new volume under Data, as a managed volume, at this path:
 # MAGIC /Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv.gz
 # MAGIC
-# MAGIC ![upload data](images/upload_data.png)
+# MAGIC ![upload data](images/upload_reviews_data_set.png)
 # MAGIC
 # MAGIC
 
