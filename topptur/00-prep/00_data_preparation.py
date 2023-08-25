@@ -42,17 +42,27 @@
 
 # COMMAND ----------
 
+import sys
+sys.path.insert(0, '..')
+import envsetup
+envsetup.setup_env(dbutils, spark)
+
+# COMMAND ----------
+
 import os
 
 REVIEWSFILE = "/Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv"
 os.environ['REVIEWSFILE'] = REVIEWSFILE
 
-REVIEWS_DEST_PATH = "/mnt/workshop/training/awsreviews/awsreviews/" 
+REVIEWS_DEST_PATH = "/Volumes/training/awsreviews/awsreviews/csvs" 
 os.environ['REVIEWS_DEST_PATH'] = REVIEWS_DEST_PATH
+TRAINING_CSVS_PATH = f"{REVIEWS_DEST_PATH}/training_csvs"
+os.environ['TRAINING_CSVS_PATH'] = TRAINING_CSVS_PATH
 
 # COMMAND ----------
 
 # MAGIC %sh 
+# MAGIC mkdir -p $REVIEWS_DEST_PATH
 # MAGIC # Check that the file is available
 # MAGIC ls $REVIEWSFILE
 
@@ -109,6 +119,12 @@ camera_reviews_df.select("product_id", "review_body", "review_headline").\
 
 # COMMAND ----------
 
+# MAGIC %sh
+# MAGIC # Check cleaned path content
+# MAGIC ls $REVIEWS_DEST_PATH/cleaned
+
+# COMMAND ----------
+
 camera_reviews_cleaned_df = spark.read.format("delta").load(f"{REVIEWS_DEST_PATH}/cleaned").\
   select("review_body", "review_headline").toDF("text", "summary")
 display(camera_reviews_cleaned_df.limit(10))
@@ -124,9 +140,13 @@ display(camera_reviews_cleaned_df.limit(10))
 
 # COMMAND ----------
 
+# MAGIC %sh ls $REVIEWS_DEST_PATH/training_csvs
+
+# COMMAND ----------
+
 train_df, val_df = camera_reviews_cleaned_df.randomSplit([0.9, 0.1], seed=42)
-train_df.toPandas().to_csv(f"{REVIEWS_DEST_PATH}/training_csvs/camera_reviews_train.csv", index=False)
-val_df.toPandas().to_csv(f"{REVIEWS_DEST_PATH}/training_csvs/camera_reviews_val.csv", index=False)
+train_df.toPandas().to_csv(f"{TRAINING_CSVS_PATH}/camera_reviews_train.csv", index=False)
+val_df.toPandas().to_csv(f"{TRAINING_CSVS_PATH}/camera_reviews_val.csv", index=False)
 
 # COMMAND ----------
 
@@ -135,7 +155,7 @@ val_df.toPandas().to_csv(f"{REVIEWS_DEST_PATH}/training_csvs/camera_reviews_val.
 
 # COMMAND ----------
 
-# MAGIC %sh ls -lh $REVIEWS_DEST_PATH/training_csvs
+# MAGIC %sh ls -lh $TRAINING_CSVS_PATH
 
 # COMMAND ----------
 

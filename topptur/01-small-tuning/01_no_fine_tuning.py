@@ -9,13 +9,23 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install 'transformers>=4.26.0'
+# MAGIC %pip install git+https://github.com/huggingface/transformers
 
 # COMMAND ----------
 
-import os
+# MAGIC %pip install 'accelerate>=0.20.3' datasets evaluate rouge-score
 
-os.environ['TRANSFORMERS_CACHE'] = "/dbfs/tmp/sean.owen@databricks.com/cache/hf"
+# COMMAND ----------
+
+# Load new libs
+dbutils.library.restartPython() 
+
+# COMMAND ----------
+
+import sys
+sys.path.insert(0, '..')
+import envsetup
+envsetup.setup_env(dbutils, spark)
 
 # COMMAND ----------
 
@@ -40,7 +50,7 @@ def summarize_review(reviews):
   pipe = summarizer_broadcast.value(("summarize: " + reviews).to_list(), batch_size=8, truncation=True)
   return pd.Series([s['summary_text'] for s in pipe])
 
-camera_reviews_df = spark.read.format("delta").load("/tmp/sean.owen@databricks.com/review/cleaned")
+camera_reviews_df = spark.read.format("delta").load(f"{envsetup.CLEAN_REVIEWS_PATH}")
 
 display(camera_reviews_df.withColumn("summary", summarize_review("review_body")).select("review_body", "summary").limit(10))
 
