@@ -11,16 +11,12 @@
 # MAGIC %md
 # MAGIC ## Data Preparation
 # MAGIC
-# MAGIC This example uses data from the [Amazon Customer Review Dataset](https://s3.amazonaws.com/amazon-reviews-pds/readme.html), or rather just the camera product reviews, as a stand-in for "your" e-commerce site's camera reviews. Simply download it and display:
-
-# COMMAND ----------
-
-
+# MAGIC This example uses data from the [Amazon Customer Review Dataset](https://s3.amazonaws.com/amazon-reviews-pds/readme.html), or rather just the camera product reviews, as a stand-in for "your" e-commerce site's camera reviews.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Get dataset from kaggle, no longer available at aws s3 bucket 
+# MAGIC ### Get dataset from kaggle, no longer available at aws s3 bucket 
 # MAGIC
 # MAGIC Start up a normal non-gpu cluster to prep the data.
 # MAGIC
@@ -35,13 +31,9 @@
 # MAGIC 3. Upload the file to a new volume under Data, as a managed volume, at this path:
 # MAGIC /Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv.gz
 # MAGIC
-# MAGIC ![upload data](images/upload_reviews_data_set.png)
+# MAGIC see images/upload_reviews_data_set.png for screenshot.
 # MAGIC
 # MAGIC
-
-# COMMAND ----------
-
-
 
 # COMMAND ----------
 
@@ -55,6 +47,9 @@ import os
 REVIEWSFILE = "/Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv"
 os.environ['REVIEWSFILE'] = REVIEWSFILE
 
+REVIEWS_DEST_PATH = "/mnt/workshop/training/awsreviews/awsreviews/" 
+os.environ['REVIEWS_DEST_PATH'] = REVIEWS_DEST_PATH
+
 # COMMAND ----------
 
 # MAGIC %sh 
@@ -63,23 +58,9 @@ os.environ['REVIEWSFILE'] = REVIEWSFILE
 
 # COMMAND ----------
 
-# MAGIC %sh mkdir -p "$REVIEWSPATH" ; more /Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv.gz | gunzip > "$REVIEWSPATH/amazon_reviews_us_Camera_v1_00.tsv"
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
 camera_reviews_df = spark.read.options(delimiter="\t", header=True).\
   csv(REVIEWSFILE)
 display(camera_reviews_df.limit(10))
-
-# COMMAND ----------
-
-# camera_reviews_df = spark.read.options(delimiter="\t", header=True).\
-#   csv(f"/tmp/$SRCDATAPREFIX/review/amazon_reviews_us_Camera_v1_00.tsv")
-# display(camera_reviews_df.limit(10))
 
 # COMMAND ----------
 
@@ -124,11 +105,11 @@ camera_reviews_df.select("product_id", "review_body", "review_headline").\
   withColumn("review_body", clean_review_udf("review_body")).\
   withColumn("review_headline", clean_summary_udf("review_headline")).\
   filter("LENGTH(review_body) > 0 AND LENGTH(review_headline) > 0").\
-  write.format("delta").save(f"/tmp/$email/review/cleaned")
+  write.format("delta").save(f"{REVIEWS_DEST_PATH}/cleaned")
 
 # COMMAND ----------
 
-camera_reviews_cleaned_df = spark.read.format("delta").load(f"/tmp/$SRCDATAPREFIX/review/cleaned").\
+camera_reviews_cleaned_df = spark.read.format("delta").load(f"{REVIEWS_DEST_PATH}/cleaned").\
   select("review_body", "review_headline").toDF("text", "summary")
 display(camera_reviews_cleaned_df.limit(10))
 
@@ -139,9 +120,22 @@ display(camera_reviews_cleaned_df.limit(10))
 
 # COMMAND ----------
 
+# MAGIC %sh mkdir -p $REVIEWS_DEST_PATH/training_csvs
+
+# COMMAND ----------
+
 train_df, val_df = camera_reviews_cleaned_df.randomSplit([0.9, 0.1], seed=42)
-train_df.toPandas().to_csv(f"/dbfs/tmp/$SRCDATAPREFIX/review/camera_reviews_train.csv", index=False)
-val_df.toPandas().to_csv(f"/dbfs/tmp/$SRCDATAPREFIX/review/camera_reviews_val.csv", index=False)
+train_df.toPandas().to_csv(f"{REVIEWS_DEST_PATH}/training_csvs/camera_reviews_train.csv", index=False)
+val_df.toPandas().to_csv(f"{REVIEWS_DEST_PATH}/training_csvs/camera_reviews_val.csv", index=False)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### List output files
+
+# COMMAND ----------
+
+# MAGIC %sh ls -lh $REVIEWS_DEST_PATH/training_csvs
 
 # COMMAND ----------
 
