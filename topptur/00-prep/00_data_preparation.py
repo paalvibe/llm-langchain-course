@@ -15,10 +15,7 @@
 
 # COMMAND ----------
 
-import os
-email = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
-os.environ['UEMAIL'] = email
-email
+
 
 # COMMAND ----------
 
@@ -29,32 +26,60 @@ email
 # MAGIC
 # MAGIC No longer available here: https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Camera_v1_00.tsv.gz
 # MAGIC
-# MAGIC Find the download link here, after logging in and paste the link into the command below:
+# MAGIC
+# MAGIC 1. Find the download link here, after logging in and paste the link into the command below:
 # MAGIC
 # MAGIC https://www.kaggle.com/datasets/cynthiarempel/amazon-us-customer-reviews-dataset?resource=download&select=amazon_reviews_us_Camera_v1_00.tsv
+# MAGIC
+# MAGIC 2. Unzip the file
+# MAGIC 3. Upload the file to a new volume under Data, as a managed volume, at this path:
+# MAGIC /Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv.gz
+# MAGIC
+# MAGIC ![upload data](images/upload_data.png)
+# MAGIC
+# MAGIC
 
 # COMMAND ----------
 
-# No longer working since dead link
-# %sh mkdir -p /dbfs/tmp/$UEMAIL/review ; curl -s https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Camera_v1_00.tsv.gz | gunzip > /dbfs/tmp/$UEMAIL/review/amazon_reviews_us_Camera_v1_00.tsv
+
 
 # COMMAND ----------
 
-# MAGIC %sh curl -s "https://storage.googleapis.com/kaggle-data-sets/1412891/2342537/compressed/amazon_reviews_us_Camera_v1_00.tsv.zip?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=gcp-kaggle-com%40kaggle-161607.iam.gserviceaccount.com%2F20230824%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20230824T134819Z&X-Goog-Expires=259200&X-Goog-SignedHeaders=host&X-Goog-Signature=4f4bbc1eb2a3a1291ae9911ab1d3f075d5c5ce8c0cad165088491aabec6b1b4256b01ac56a1cad30e8615ea1963bf71a871f10fb13f90d5e7d8c2e116bdf73f987d3365e8e3e7c2c56bdfb274e15d1a45e8c783cfbe91d68e1f17220fe3a3812cbd54ae580017da602ff8ba596909c264282feea63610e0c1d9535fc71979d674b448f6eae05c1c604ebc1bb003af8a9021de1a87693b2c63775820bf315c514e886c07996a27e1ba1fc01b329736c0e9ee91d85e6c0587f1d27470e86a8b11f66ef84ddc8b86457aa515344cd2d60c977cab8750fa1734be1abe321dc8e66988465315c2d44781eb6dd7e9e3021a19de3c170ba777566b373733762190214a3" > /dbfs/tmp/$UEMAIL/review/amazon_reviews_us_Camera_v1_00.tsv.zip
+# MAGIC %md
+# MAGIC ## Define path as constant for python and bash
 
 # COMMAND ----------
 
-# MAGIC %sh ls -l /dbfs/tmp/$UEMAIL/review/
+import os
+
+REVIEWSFILE = "/Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv"
+os.environ['REVIEWSFILE'] = REVIEWSFILE
 
 # COMMAND ----------
 
-# MAGIC %sh unzip /dbfs/tmp/$UEMAIL/review/amazon_reviews_us_Camera_v1_00.tsv.zip
+# MAGIC %sh 
+# MAGIC # Check that the file is available
+# MAGIC ls $REVIEWSFILE
+
+# COMMAND ----------
+
+# MAGIC %sh mkdir -p "$REVIEWSPATH" ; more /Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv.gz | gunzip > "$REVIEWSPATH/amazon_reviews_us_Camera_v1_00.tsv"
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
 camera_reviews_df = spark.read.options(delimiter="\t", header=True).\
-  csv(f"/tmp/$email/review/amazon_reviews_us_Camera_v1_00.tsv")
+  csv(REVIEWSFILE)
 display(camera_reviews_df.limit(10))
+
+# COMMAND ----------
+
+# camera_reviews_df = spark.read.options(delimiter="\t", header=True).\
+#   csv(f"/tmp/$SRCDATAPREFIX/review/amazon_reviews_us_Camera_v1_00.tsv")
+# display(camera_reviews_df.limit(10))
 
 # COMMAND ----------
 
@@ -103,7 +128,7 @@ camera_reviews_df.select("product_id", "review_body", "review_headline").\
 
 # COMMAND ----------
 
-camera_reviews_cleaned_df = spark.read.format("delta").load(f"/tmp/$email/review/cleaned").\
+camera_reviews_cleaned_df = spark.read.format("delta").load(f"/tmp/$SRCDATAPREFIX/review/cleaned").\
   select("review_body", "review_headline").toDF("text", "summary")
 display(camera_reviews_cleaned_df.limit(10))
 
@@ -115,8 +140,8 @@ display(camera_reviews_cleaned_df.limit(10))
 # COMMAND ----------
 
 train_df, val_df = camera_reviews_cleaned_df.randomSplit([0.9, 0.1], seed=42)
-train_df.toPandas().to_csv(f"/dbfs/tmp/email/review/camera_reviews_train.csv", index=False)
-val_df.toPandas().to_csv(f"/dbfs/tmp/email/review/camera_reviews_val.csv", index=False)
+train_df.toPandas().to_csv(f"/dbfs/tmp/$SRCDATAPREFIX/review/camera_reviews_train.csv", index=False)
+val_df.toPandas().to_csv(f"/dbfs/tmp/$SRCDATAPREFIX/review/camera_reviews_val.csv", index=False)
 
 # COMMAND ----------
 
