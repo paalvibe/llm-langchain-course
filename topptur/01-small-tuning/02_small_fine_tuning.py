@@ -42,6 +42,17 @@ envsetup.setup_env(dbutils, spark)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Run the model fine tuning
+# MAGIC
+# MAGIC We will now run the fine tuning script using the reviews CSVs that were prepared in the 00_data_preparation notebook.
+# MAGIC
+# MAGIC It will take about 1hour on an g5.xlarge AWS instance.
+# MAGIC
+# MAGIC If the model exists, we do not need to retrain it.
+
+# COMMAND ----------
+
 import os
 
 os.environ['MLFLOW_EXPERIMENT_NAME'] = f"/Users/{envsetup.EMAIL}/fine-tuning-t5"
@@ -77,27 +88,76 @@ T5_SMALL_SUMMARY_MODEL_PATH
 
 # COMMAND ----------
 
-# MAGIC %sh export DATABRICKS_TOKEN && export DATABRICKS_HOST && export MLFLOW_EXPERIMENT_NAME && export MLFLOW_FLATTEN_PARAMS && python \
-# MAGIC     $SUMMARIZATION_SCRIPT_PATH/run_summarization.py \
-# MAGIC     --model_name_or_path t5-small \
-# MAGIC     --do_train \
-# MAGIC     --do_eval \
-# MAGIC     --train_file $TRAINING_CSVS_PATH/camera_reviews_train.csv \
-# MAGIC     --validation_file $TRAINING_CSVS_PATH/camera_reviews_val.csv \
-# MAGIC     --source_prefix "summarize: " \
-# MAGIC     --output_dir $REVIEWS_DEST_PATH/t5-small-summary \
-# MAGIC     --optim adafactor \
-# MAGIC     --num_train_epochs 8 \
-# MAGIC     --bf16 \
-# MAGIC     --per_device_train_batch_size 64 \
-# MAGIC     --per_device_eval_batch_size 64 \
-# MAGIC     --predict_with_generate \
-# MAGIC     --run_name "t5-small-fine-tune-reviews"
+ls $T5_SMALL_SUMMARY_MODEL_PATH/*.model
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Check if model already exists
 
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC # List outputs
+# MAGIC MODELFILE=$T5_SMALL_SUMMARY_MODEL_PATH/spiece.model
+# MAGIC if [ -f $MODELFILE ]; then
+# MAGIC    echo "Tuned model $MODELFILE already exists, no need to build again."
+# MAGIC else
+# MAGIC    echo "Tuned model $MODELFILE does not exist."
+# MAGIC fi
+# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Tuning the model
+# MAGIC
+# MAGIC Example result:
+# MAGIC ```
+# MAGIC 100%|██████████| 281/281 [02:02<00:00,  2.29it/s]
+# MAGIC [INFO|modelcard.py:452] 2023-08-25 15:20:41,345 >> Dropping the following result as it does not have all the necessary fields:
+# MAGIC {'task': {'name': 'Summarization', 'type': 'summarization'}, 'metrics': [{'name': 'Rouge1', 'type': 'rouge', 'value': 28.0495}]}
+# MAGIC ***** eval metrics *****
+# MAGIC   epoch                   =        8.0
+# MAGIC   eval_gen_len            =     7.0363
+# MAGIC   eval_loss               =     2.5175
+# MAGIC   eval_rouge1             =    28.0495
+# MAGIC   eval_rouge2             =    17.1989
+# MAGIC   eval_rougeL             =     27.726
+# MAGIC   eval_rougeLsum          =    27.7482
+# MAGIC   eval_runtime            = 0:02:03.92
+# MAGIC   eval_samples            =      17946
+# MAGIC   eval_samples_per_second =    144.815
+# MAGIC   eval_steps_per_second   =      2.268
+# MAGIC   
+# MAGIC   Command took 58.80 minutes... (on g5.xlarge AWS instance)
+# MAGIC   ```
+
+# COMMAND ----------
+
+# %sh 
+# # Comment in this code to rerun trainging. NOT NEEDED IF MODEL EXISTS at T5_SMALL_SUMMARY_MODEL_PATH
+
+# export DATABRICKS_TOKEN && export DATABRICKS_HOST && export MLFLOW_EXPERIMENT_NAME && export MLFLOW_FLATTEN_PARAMS && python \
+#     $SUMMARIZATION_SCRIPT_PATH/run_summarization.py \
+#     --model_name_or_path t5-small \
+#     --do_train \
+#     --do_eval \
+#     --train_file $TRAINING_CSVS_PATH/camera_reviews_train.csv \
+#     --validation_file $TRAINING_CSVS_PATH/camera_reviews_val.csv \
+#     --source_prefix "summarize: " \
+#     --output_dir $REVIEWS_DEST_PATH/t5-small-summary \
+#     --optim adafactor \
+#     --num_train_epochs 8 \
+#     --bf16 \
+#     --per_device_train_batch_size 64 \
+#     --per_device_eval_batch_size 64 \
+#     --predict_with_generate \
+#     --run_name "t5-small-fine-tune-reviews"
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC # Show some outputs in the model directory
 # MAGIC echo "$T5_SMALL_SUMMARY_MODEL_PATH"
 # MAGIC ls $T5_SMALL_SUMMARY_MODEL_PATH/*.model
 # MAGIC ls $T5_SMALL_SUMMARY_MODEL_PATH/*.json
@@ -115,7 +175,14 @@ os.environ['CLEANED_REVIEWS_PATH'] = CLEANED_REVIEWS_PATH
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC ls $CLEANED_REVIEWS_PATH
+# MAGIC # Show contents of cleaned data directory
+# MAGIC echo "Dir: $CLEANED_REVIEWS_PATH"
+# MAGIC ls $CLEANED_REVIEWS_PATH | head -n 3
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Test the tuned model
 
 # COMMAND ----------
 
@@ -147,7 +214,10 @@ display(review_by_product_df.select("reviews", "summary").limit(10))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC This model can even be managed by MLFlow by wrapping up its usage in a simple custom `PythonModel`:
+# MAGIC ## Serve as model checkpoint
+# MAGIC This model can even be managed by MLFlow by wrapping up its usage in a simple custom `PythonModel`.
+# MAGIC
+# MAGIC This way it can be usd by other workflows or services as an endpoint to produce a review.
 
 # COMMAND ----------
 
@@ -173,10 +243,11 @@ class ReviewModel(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
-# MAGIC %sh rm -r /tmp/t5-small-summary ; mkdir -p /tmp/t5-small-summary ; cp /dbfs/tmp/sean.owen@databricks.com/review/t5-small-summary/* /tmp/t5-small-summary
+# MAGIC %sh rm -r /tmp/t5-small-summary ; mkdir -p /tmp/t5-small-summary ; cp $T5_SMALL_SUMMARY_MODEL_PATH/* /tmp/t5-small-summary
 
 # COMMAND ----------
 
+# Define an experiment path to log the model and register it
 experiment_path = f"/Users/{envsetup.EMAIL}/fine-tuning-t5"
 mlflow.set_experiment(experiment_path)
 last_run_id = mlflow.search_runs(filter_string="tags.mlflow.runName	= 't5-small-fine-tune-reviews'")['run_id'].item()
@@ -196,11 +267,16 @@ with mlflow.start_run(run_id=last_run_id):
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Measure the latency of a review
+
+# COMMAND ----------
+
 sample_review = "summarize: " + review_by_product_df.select("reviews").head(1)[0]["reviews"]
 
 summarizer_pipeline = pipeline("summarization",\
-  model="/dbfs/tmp/sean.owen@databricks.com/review/t5-small-summary",\
-  tokenizer="/dbfs/tmp/sean.owen@databricks.com/review/t5-small-summary",\
+  model=T5_SMALL_SUMMARY_MODEL_PATH,\
+  tokenizer=T5_SMALL_SUMMARY_MODEL_PATH,\
   num_beams=10, min_new_tokens=50, device="cuda:0")
 
 # COMMAND ----------
