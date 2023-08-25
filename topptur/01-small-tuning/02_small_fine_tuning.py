@@ -71,6 +71,12 @@ os.environ['MLFLOW_EXPERIMENT_NAME']
 
 # COMMAND ----------
 
+T5_SMALL_SUMMARY_MODEL_PATH = f"{envsetup.REVIEWS_DEST_PATH}/t5-small-summary"
+os.environ['T5_SMALL_SUMMARY_MODEL_PATH'] = T5_SMALL_SUMMARY_MODEL_PATH
+T5_SMALL_SUMMARY_MODEL_PATH
+
+# COMMAND ----------
+
 # MAGIC %sh export DATABRICKS_TOKEN && export DATABRICKS_HOST && export MLFLOW_EXPERIMENT_NAME && export MLFLOW_FLATTEN_PARAMS && python \
 # MAGIC     $SUMMARIZATION_SCRIPT_PATH/run_summarization.py \
 # MAGIC     --model_name_or_path t5-small \
@@ -90,8 +96,26 @@ os.environ['MLFLOW_EXPERIMENT_NAME']
 
 # COMMAND ----------
 
+# MAGIC %sh
+# MAGIC # List outputs
+# MAGIC echo "$T5_SMALL_SUMMARY_MODEL_PATH"
+# MAGIC ls $T5_SMALL_SUMMARY_MODEL_PATH/*.model
+# MAGIC ls $T5_SMALL_SUMMARY_MODEL_PATH/*.json
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC Same inference code as before, just built using the fine-tuned model that was produced above:
+
+# COMMAND ----------
+
+CLEANED_REVIEWS_PATH = f"{envsetup.REVIEWS_DEST_PATH}/cleaned"
+os.environ['CLEANED_REVIEWS_PATH'] = CLEANED_REVIEWS_PATH
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC ls $CLEANED_REVIEWS_PATH
 
 # COMMAND ----------
 
@@ -100,8 +124,8 @@ from transformers import pipeline
 import pandas as pd
 
 summarizer_pipeline = pipeline("summarization",\
-  model="/dbfs/tmp/sean.owen@databricks.com/review/t5-small-summary",\
-  tokenizer="/dbfs/tmp/sean.owen@databricks.com/review/t5-small-summary",\
+  model=T5_SMALL_SUMMARY_MODEL_PATH,\
+  tokenizer=T5_SMALL_SUMMARY_MODEL_PATH,\
   num_beams=10, min_new_tokens=50)
 summarizer_broadcast = sc.broadcast(summarizer_pipeline)
 
@@ -110,7 +134,7 @@ def summarize_review(reviews):
   pipe = summarizer_broadcast.value(("summarize: " + reviews).to_list(), batch_size=8, truncation=True)
   return pd.Series([s['summary_text'] for s in pipe])
 
-camera_reviews_df = spark.read.format("delta").load("/tmp/sean.owen@databricks.com/review/cleaned")
+camera_reviews_df = spark.read.format("delta").load(CLEANED_REVIEWS_PATH)
 
 review_by_product_df = camera_reviews_df.groupBy("product_id").\
   agg(collect_list("review_body").alias("review_array"), count("*").alias("n")).\
@@ -119,31 +143,6 @@ review_by_product_df = camera_reviews_df.groupBy("product_id").\
   withColumn("summary", summarize_review("reviews"))
 
 display(review_by_product_df.select("reviews", "summary").limit(10))
-
-# COMMAND ----------
-
-from pyspark.sql.functions import collect_list, concat_ws, col, count, pandas_udf
-from transformers import pipeline
-import pandas as pd
-
-summarizer_pipeline = pipeline("summarization",\
-  model="/dbfs/tmp/sean.owen@databricks.com/review/t5-small-summary",\
-  tokenizer="/dbfs/tmp/sean.owen@databricks.com/review/t5-small-summary",\
-  num_beams=10, min_new_tokens=50)
-summarizer_broadcast = sc.broadcast(summarizer_pipeline)
-
-@pandas_udf('string')
-def summarize_review(reviews):
-  pipe = summarizer_broadcast.value(("summarize: " + reviews).to_list(), batch_size=8, truncation=True)
-  return pd.Series([s['summary_text'] for s in pipe])
-
-camera_reviews_df = spark.read.format("delta").load("/tmp/sean.owen@databricks.com/review/cleaned")
-
-review_by_product_df = camera_reviews_df.groupBy("product_id").\
-  agg(collect_list("review_body").alias("review_array"), count("*").alias("n")).\
-  filter("n >= 10").\
-  select("product_id", "n", concat_ws(" ", col("review_array")).alias("reviews")).\
-  withColumn("summary", summarize_review("reviews"))
 
 # COMMAND ----------
 
@@ -178,7 +177,8 @@ class ReviewModel(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
-mlflow.set_experiment("/Users/sean.owen@databricks.com/fine-tuning-t5")
+experiment_path = f"/Users/{envsetup.EMAIL}/fine-tuning-t5"
+mlflow.set_experiment(experiment_path)
 last_run_id = mlflow.search_runs(filter_string="tags.mlflow.runName	= 't5-small-fine-tune-reviews'")['run_id'].item()
 
 with mlflow.start_run(run_id=last_run_id):
