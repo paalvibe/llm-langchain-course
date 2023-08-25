@@ -9,6 +9,13 @@
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Install packages
+# MAGIC
+# MAGIC We need some bleeding edge packages to get it to run
+
+# COMMAND ----------
+
 # MAGIC %pip install git+https://github.com/huggingface/transformers
 
 # COMMAND ----------
@@ -22,6 +29,11 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Load shared environment setup
+
+# COMMAND ----------
+
 import sys
 sys.path.insert(0, '..')
 import envsetup
@@ -30,6 +42,9 @@ envsetup.setup_env(dbutils, spark)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC
+# MAGIC ## Produce reviews with off the shelf model
+# MAGIC
 # MAGIC Applying an off-the-shelf summarization pipeline is just a matter of wrapping it in a UDF and applying it to data in a Spark DataFrame, such as the data read from the Delta table created in the last notebooks.
 # MAGIC
 # MAGIC - `pandas_udf` makes inference more efficient as it can apply the model to batches of data at a time
