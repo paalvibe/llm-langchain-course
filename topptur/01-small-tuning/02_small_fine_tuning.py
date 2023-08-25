@@ -11,7 +11,7 @@
 # COMMAND ----------
 
 # Install from source to get minimum version 4.33.0.dev0
-pip install git+https://github.com/huggingface/transformers
+%pip install git+https://github.com/huggingface/transformers
 
 # COMMAND ----------
 
@@ -87,10 +87,6 @@ os.environ['MLFLOW_EXPERIMENT_NAME']
 # MAGIC     --per_device_eval_batch_size 64 \
 # MAGIC     --predict_with_generate \
 # MAGIC     --run_name "t5-small-fine-tune-reviews"
-
-# COMMAND ----------
-
-
 
 # COMMAND ----------
 

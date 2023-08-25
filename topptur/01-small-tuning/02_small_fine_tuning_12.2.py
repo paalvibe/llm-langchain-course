@@ -11,7 +11,7 @@
 # COMMAND ----------
 
 # Install from source to get minimum version 4.33.0.dev0
-pip install git+https://github.com/huggingface/transformers
+%pip install git+https://github.com/huggingface/transformers
 
 # COMMAND ----------
 
