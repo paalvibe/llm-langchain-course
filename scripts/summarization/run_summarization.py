@@ -412,7 +412,7 @@ def main():
             data_args.dataset_name,
             data_args.dataset_config_name,
             cache_dir=model_args.cache_dir,
-            token=model_args.token,
+            # paalvibe # token=model_args.token, caused TypeError: CsvConfig.__init__() got an unexpected keyword argument 'token'
         )
     else:
         data_files = {}
@@ -429,7 +429,7 @@ def main():
             extension,
             data_files=data_files,
             cache_dir=model_args.cache_dir,
-            token=model_args.token,
+            # paalvibe # token=model_args.token, # caused TypeError: CsvConfig.__init__() got an unexpected keyword argument 'token'
         )
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.

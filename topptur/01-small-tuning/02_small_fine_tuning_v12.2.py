@@ -10,6 +10,10 @@
 
 # COMMAND ----------
 
+# MAGIC %sh more /root/.cache/huggingface/datasets/csv/default-fbd08ff9d61af566/0.0.0/6954658bab30a358235fa864b05cf819af0e179325c740e4bc853bcc7ec513e1/dataset_info.json
+
+# COMMAND ----------
+
 # Install from source to get minimum version 4.33.0.dev0
 %pip install git+https://github.com/huggingface/transformers
 
@@ -87,10 +91,6 @@ os.environ['MLFLOW_EXPERIMENT_NAME']
 # MAGIC     --per_device_eval_batch_size 64 \
 # MAGIC     --predict_with_generate \
 # MAGIC     --run_name "t5-small-fine-tune-reviews"
-
-# COMMAND ----------
-
-
 
 # COMMAND ----------
 
