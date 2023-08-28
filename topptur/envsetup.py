@@ -8,6 +8,7 @@ def setup_env(dbutils, spark):
     os.environ['DATABRICKS_TOKEN'] = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
     os.environ['DATABRICKS_HOST'] = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
     EMAIL = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+    os.environ['EMAIL'] = EMAIL
     MODEL_CACHE_PATH = f"/dbfs/tmp/{EMAIL}/cache/hf"
     os.environ['TRANSFORMERS_CACHE'] = MODEL_CACHE_PATH
     # reviews base path

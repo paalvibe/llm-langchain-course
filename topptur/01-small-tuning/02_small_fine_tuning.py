@@ -52,10 +52,6 @@ envsetup.setup_env(dbutils, spark)
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC Set additional environment variables to enable integration between Hugging Face's training and MLflow hosted in Databricks (and make sure to use the shared cache again!)
 # MAGIC You can also set `HF_MLFLOW_LOG_ARTIFACTS` to have it log all checkpoints to MLflow, but they can be large.
@@ -235,6 +231,16 @@ display(review_by_product_df.select("reviews", "summary").limit(10))
 
 # MAGIC %md
 # MAGIC
+# MAGIC ### Compare with the reviews from the untuned model
+# MAGIC
+# MAGIC Compare with the reviews from ./01_no_fine_tuning output
+# MAGIC
+# MAGIC Which do you like better?
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
 # MAGIC ## Deploy model as a service endpoint
 
 # COMMAND ----------
@@ -290,7 +296,7 @@ class ReviewModel(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
-# MAGIC %sh rm -r /tmp/t5-small-summary ; mkdir -p /tmp/t5-small-summary ; cp $T5_SMALL_SUMMARY_MODEL_PATH/* /tmp/t5-small-summary
+# MAGIC %sh mkdir -p /tmp/$EMAIL/t5-small-summary ; rm -r /tmp/$EMAIL/t5-small-summary/* ; cp $T5_SMALL_SUMMARY_MODEL_PATH/* /tmp/$EMAIL/t5-small-summary
 
 # COMMAND ----------
 
@@ -300,7 +306,7 @@ mlflow.set_experiment(experiment_path)
 last_run_id = mlflow.search_runs(filter_string="tags.mlflow.runName	= 't5-small-fine-tune-reviews'")['run_id'].item()
 
 with mlflow.start_run(run_id=last_run_id) as run:
-  mlflow.pyfunc.log_model(artifacts={"pipeline": "/tmp/t5-small-summary"}, 
+  mlflow.pyfunc.log_model(artifacts={"pipeline": f"/tmp/{envsetup.EMAIL}/t5-small-summary"}, 
     artifact_path="review_summarizer", 
     python_model=ReviewModel(),
     registered_model_name="sean_t5_small_fine_tune_reviews")
@@ -337,12 +343,17 @@ from libs.modelname import modelname
 
 MODEL_NAME = envsetup.SMALL_TUNED_MODEL
 
-registered_name = f"models.default.{MODEL_NAME}" # Note that the UC model name follows the pattern <catalog_name>.<schema_name>.<model_name>, corresponding to the catalog, schema, and registered model name
+print(f"MODEL_NAME: {MODEL_NAME}")
+registered_name = MODEL_NAME # Note that the UC model name follows the pattern <catalog_name>.<schema_name>.<model_name>, corresponding to the catalog, schema, and registered model name
 
 result = mlflow.register_model(
     "runs:/"+run.info.run_id+"/model",
     registered_name,
 )
+
+# COMMAND ----------
+
+registered_name
 
 # COMMAND ----------
 
