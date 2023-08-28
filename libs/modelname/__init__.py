@@ -10,24 +10,28 @@ def username(dbutils):
     return name
 
 
-def tblname(
+def modelname(
 *, 
-tbl,
+model,
 db="llmtopptur",
-catalog="training",
+catalog="trainingmodels",
 env="dev",
 ):
     # Get dbutils from calling module, as databricks lib not available in UC cluster
-    dbutils = inspect.stack()[1][0].f_globals['dbutils']
-    if not tbl:
-        raise ValueError("tbl must be a non-empty string")
+    dbutils = None
+    try:
+        dbutils = inspect.stack()[1][0].f_globals['dbutils']
+    except KeyError:
+        dbutils = inspect.stack()[2][0].f_globals['dbutils']
+    if not model:
+        raise ValueError("model must be a non-empty string")
     if not db:
         raise ValueError("db must be a non-empty string")
     db_prefix = ""
     if env == "dev":
         uname = username(dbutils)
         db_prefix = f"dev_{uname}_"
-    return f"{catalog}.{db_prefix}{db}.{tbl}"
+    return f"{catalog}.{db_prefix}{db}.{model}"
     # ignore catalog for now, until UC is enabled
-    # return f"{db_prefix}{db}.{tbl}"
+    # return f"{db_prefix}{db}.{model}"
     

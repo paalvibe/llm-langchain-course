@@ -13,7 +13,7 @@ def username(dbutils):
 
 def dbname(
 *, 
-db="nyc_workshop",
+db="llmtopptur",
 catalog="training",
 env="dev",
 ):

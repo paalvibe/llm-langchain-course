@@ -10,17 +10,17 @@
 
 # COMMAND ----------
 
-# Install from source to get minimum version 4.33.0.dev0
-%pip install git+https://github.com/huggingface/transformers
-
-# COMMAND ----------
-
-# MAGIC %pip install 'accelerate>=0.20.3' datasets evaluate rouge-score
+# MAGIC %md
+# MAGIC
+# MAGIC ## Check that necessary packages are available
 
 # COMMAND ----------
 
 # Load new libs
 dbutils.library.restartPython() 
+from transformers.utils import check_min_version
+# Will error if the minimal version of Transformers is not installed. Remove at your own risks.
+check_min_version("4.32")
 
 # COMMAND ----------
 
@@ -33,6 +33,10 @@ import sys
 sys.path.insert(0, '..')
 import envsetup
 envsetup.setup_env(dbutils, spark)
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
@@ -214,7 +218,34 @@ display(review_by_product_df.select("reviews", "summary").limit(10))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Serve as model checkpoint
+# MAGIC
+# MAGIC ## Deploy model as a service endpoint
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Measure the latency of a review
+# MAGIC
+# MAGIC
+# MAGIC What would the latency be like for such a model? if latency is important, then one might serve the model using GPUs (using Databricks Model Serving). Test latency on a single input, and run this on a GPU cluster.
+
+# COMMAND ----------
+
+sample_review = "summarize: " + review_by_product_df.select("reviews").head(1)[0]["reviews"]
+
+summarizer_pipeline = pipeline("summarization",\
+  model=T5_SMALL_SUMMARY_MODEL_PATH,\
+  tokenizer=T5_SMALL_SUMMARY_MODEL_PATH,\
+  num_beams=10, min_new_tokens=50, device="cuda:0")
+
+# COMMAND ----------
+
+# MAGIC %time summarizer_pipeline(sample_review, truncation=True)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Log the model to MLFlow
 # MAGIC This model can even be managed by MLFlow by wrapping up its usage in a simple custom `PythonModel`.
 # MAGIC
 # MAGIC This way it can be usd by other workflows or services as an endpoint to produce a review.
@@ -252,7 +283,7 @@ experiment_path = f"/Users/{envsetup.EMAIL}/fine-tuning-t5"
 mlflow.set_experiment(experiment_path)
 last_run_id = mlflow.search_runs(filter_string="tags.mlflow.runName	= 't5-small-fine-tune-reviews'")['run_id'].item()
 
-with mlflow.start_run(run_id=last_run_id):
+with mlflow.start_run(run_id=last_run_id) as run:
   mlflow.pyfunc.log_model(artifacts={"pipeline": "/tmp/t5-small-summary"}, 
     artifact_path="review_summarizer", 
     python_model=ReviewModel(),
@@ -262,27 +293,87 @@ with mlflow.start_run(run_id=last_run_id):
 
 # MAGIC %md
 # MAGIC This model can then be deployed as a real-time endpoint! Check the `Models` and `Endpoints` tabs to the left in Databricks.
-# MAGIC
-# MAGIC What would the latency be like for such a model? if latency is important, then one might serve the model using GPUs (coming soon to Databricks Model Serving). Test latency on a single input, and run this on a GPU cluster:
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Measure the latency of a review
+# MAGIC ### Register the model to Unity Catalog
+# MAGIC
+# MAGIC By default, MLflow registers models in the Databricks workspace model registry. To register models in Unity Catalog instead, we follow the [documentation](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html) and set the registry server as Databricks Unity Catalog.
+# MAGIC
+# MAGIC In order to register a model in Unity Catalog, there are [several requirements](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html#requirements), such as Unity Catalog must be enabled in your workspace.
+# MAGIC
 
 # COMMAND ----------
 
-sample_review = "summarize: " + review_by_product_df.select("reviews").head(1)[0]["reviews"]
-
-summarizer_pipeline = pipeline("summarization",\
-  model=T5_SMALL_SUMMARY_MODEL_PATH,\
-  tokenizer=T5_SMALL_SUMMARY_MODEL_PATH,\
-  num_beams=10, min_new_tokens=50, device="cuda:0")
+# Configure MLflow Python client to register model in Unity Catalog
+import mlflow
+mlflow.set_registry_uri("databricks-uc")
 
 # COMMAND ----------
 
-# MAGIC %time summarizer_pipeline(sample_review, truncation=True)
+from libs.modelname import modelname
 
 # COMMAND ----------
 
+# Register model to Unity Catalog
+# This may take 2.2 minutes to complete
 
+MODEL_NAME = envsetup.SMALL_TUNED_MODEL
+
+registered_name = f"models.default.{MODEL_NAME}" # Note that the UC model name follows the pattern <catalog_name>.<schema_name>.<model_name>, corresponding to the catalog, schema, and registered model name
+
+result = mlflow.register_model(
+    "runs:/"+run.info.run_id+"/model",
+    registered_name,
+)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC ### Deployment
+# MAGIC
+# MAGIC Once the model is registered, we can use API to create a Databricks GPU Model Serving Endpoint that serves the `t5-small-summary` model.
+
+# COMMAND ----------
+
+# Provide a name to the serving endpoint
+endpoint_name = MODEL_NAME
+databricks_url = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None)
+token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None)
+
+# COMMAND ----------
+
+import requests
+import json
+
+deploy_headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+deploy_url = f'{databricks_url}/api/2.0/serving-endpoints'
+
+model_version = result  # the returned result of mlflow.register_model
+endpoint_config = {
+  "name": endpoint_name,
+  "config": {
+    "served_models": [{
+      "name": f'{model_version.name.replace(".", "_")}_{model_version.version}',
+      "model_name": model_version.name,
+      "model_version": model_version.version,
+      "workload_type": "GPU_MEDIUM",
+      "workload_size": "Small",
+      "scale_to_zero_enabled": "False"
+    }]
+  }
+}
+endpoint_json = json.dumps(endpoint_config, indent='  ')
+
+# Send a POST request to the API
+deploy_response = requests.request(method='POST', headers=deploy_headers, url=deploy_url, data=endpoint_json)
+
+if deploy_response.status_code != 200:
+  raise Exception(f'Request failed with status {deploy_response.status_code}, {deploy_response.text}')
+
+# Show the response of the POST request
+# When first creating the serving endpoint, it should show that the state 'ready' is 'NOT_READY'
+# You can check the status on the Databricks model serving endpoint page, it is expected to take ~35 min for the serving endpoint to become ready
+print(deploy_response.json())
