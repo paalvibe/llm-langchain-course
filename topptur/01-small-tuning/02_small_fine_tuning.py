@@ -11,6 +11,22 @@
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Install packages
+# MAGIC
+# MAGIC We need some bleeding edge packages to get it to run.
+# MAGIC These must be installed in each notebook.
+
+# COMMAND ----------
+
+# MAGIC %pip install git+https://github.com/huggingface/transformers
+
+# COMMAND ----------
+
+# MAGIC %pip install 'accelerate>=0.20.3' datasets evaluate rouge-score
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC
 # MAGIC ## Check that necessary packages are available
 

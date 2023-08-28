@@ -12,7 +12,8 @@
 # MAGIC %md
 # MAGIC ## Install packages
 # MAGIC
-# MAGIC We need some bleeding edge packages to get it to run
+# MAGIC We need some bleeding edge packages to get it to run.
+# MAGIC These must be installed in each notebook.
 
 # COMMAND ----------
 
@@ -24,8 +25,16 @@
 
 # COMMAND ----------
 
-# Load new libs
-dbutils.library.restartPython() 
+# MAGIC %md
+# MAGIC
+# MAGIC ## Check that necessary packages are available
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+from transformers.utils import check_min_version
+# Will error if the minimal version of Transformers is not installed. Remove at your own risks.
+check_min_version("4.32")
 
 # COMMAND ----------
 
