@@ -28,6 +28,10 @@ spark.sql("CREATE CATALOG IF NOT EXISTS trainingmodels")
 
 # COMMAND ----------
 
+
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC # Grant select on files to users
 # MAGIC

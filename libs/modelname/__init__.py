@@ -10,7 +10,20 @@ def username(dbutils):
     return name
 
 
-def modelname(
+def ucschema(*,
+            db="llmtopptur",
+            catalog="trainingmodels",
+            env="dev",
+            dbutils):
+    uname = username(dbutils)
+    db_prefix = ""
+    if env == "dev":
+        uname = username(dbutils)
+        db_prefix = f"dev_{uname}_"
+    return f"{catalog}.{db_prefix}{db}"
+
+
+def ucmodel(
 *, 
 model,
 db="llmtopptur",
@@ -27,11 +40,6 @@ env="dev",
         raise ValueError("model must be a non-empty string")
     if not db:
         raise ValueError("db must be a non-empty string")
-    db_prefix = ""
-    if env == "dev":
-        uname = username(dbutils)
-        db_prefix = f"dev_{uname}_"
-    return f"{catalog}.{db_prefix}{db}.{model}"
-    # ignore catalog for now, until UC is enabled
-    # return f"{db_prefix}{db}.{model}"
+    schema = ucschema(db=db, catalog=catalog, env=env, dbutils=dbutils)
+    return f"{schema}.{model}"
     
