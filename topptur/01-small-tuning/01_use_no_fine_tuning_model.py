@@ -91,7 +91,7 @@ display(camera_reviews_df.withColumn("summary", summarize_review("review_body"))
 
 from pyspark.sql.functions import collect_list, concat_ws, col, count
 
-summarizer_broadcast = pipeline("summarization", model="t5-small", tokenizer="t5-small", num_beams=10, min_new_tokens=50)
+summarizer_pipeline = pipeline("summarization", model="t5-small", tokenizer="t5-small", num_beams=10, min_new_tokens=50)
 summarizer_broadcast = sc.broadcast(summarizer_pipeline)
 
 @pandas_udf('string')
