@@ -182,8 +182,8 @@ T5_LARGE_SUMMARY_MODEL_PATH
 # MAGIC %sh
 # MAGIC # Show some outputs in the model directory
 # MAGIC echo "$T5_LARGE_SUMMARY_MODEL_PATH"
-# MAGIC ls $T5_LARGE_SUMMARY_MODEL_PATH/*.model
-# MAGIC ls $T5_LARGE_SUMMARY_MODEL_PATH/*.json
+# MAGIC ls -lh $T5_LARGE_SUMMARY_MODEL_PATH/*.model
+# MAGIC ls -lh $T5_LARGE_SUMMARY_MODEL_PATH/*.json
 
 # COMMAND ----------
 
@@ -230,6 +230,12 @@ os.environ['CLEANED_REVIEWS_PATH'] = CLEANED_REVIEWS_PATH
 
 # MAGIC %md
 # MAGIC ## Test the tuned model
+# MAGIC
+# MAGIC Did not complete on 32gb.
+# MAGIC Will take about 15m for 10 records on 5g.4xlarge 64gb, 1 GPU.
+# MAGIC So we only ask for 1 record instead, which takes 2.24m.
+# MAGIC
+# MAGIC We filter on the word hybrid to get a certain class of reviews.
 
 # COMMAND ----------
 
@@ -256,7 +262,8 @@ review_by_product_df = camera_reviews_df.groupBy("product_id").\
   select("product_id", "n", concat_ws(" ", col("review_array")).alias("reviews")).\
   withColumn("summary", summarize_review("reviews"))
 
-display(review_by_product_df.select("reviews", "summary").limit(10))
+# We filter on the word hybrid to get a certain class of reviews
+display(review_by_product_df.where("reviews like '% hybrid %'").select("reviews", "summary").limit(1))
 
 # COMMAND ----------
 
@@ -267,6 +274,15 @@ display(review_by_product_df.select("reviews", "summary").limit(10))
 # MAGIC Compare with the reviews from ../01-small-tuning outputs
 # MAGIC
 # MAGIC Which do you like better?
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC ## Task: Look for some other kinds of reviews
+# MAGIC
+# MAGIC ...and manually compare results from the different model variations.
+# MAGIC Filter on something else than "hybrid" in the where clause.
 
 # COMMAND ----------
 

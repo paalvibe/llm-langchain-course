@@ -92,7 +92,7 @@ print(llm_chain.predict(instruction="When was George Washington president?").lst
 
 # COMMAND ----------
 
-print(llm_chain.predict(instruction="What determines how fast can you reply to the requests?").lstrip())
+print(llm_chain.predict(instruction="What determines how fast you can reply to the requests?").lstrip())
 
 # COMMAND ----------
 

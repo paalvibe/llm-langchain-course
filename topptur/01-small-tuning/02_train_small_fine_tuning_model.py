@@ -6,6 +6,8 @@
 # MAGIC
 # MAGIC This demonstrates basic fine-tuning with the `t5-small` model. This notebook should be run on an instance with 1 Ampere architecture GPU, such as an A10. Use Databricks Runtime 12.2 ML GPU or higher.
 # MAGIC
+# MAGIC The training should be done on a 32gb GPU instance. Using the tuned model can be done on a 16gb GPU instance.
+# MAGIC
 # MAGIC This requires a few additional Python libraries, including an update to the very latest `transformers`, and additional CUDA tools:
 
 # COMMAND ----------
@@ -176,8 +178,8 @@ ls $T5_SMALL_SUMMARY_MODEL_PATH/*.model
 # MAGIC %sh
 # MAGIC # Show some outputs in the model directory
 # MAGIC echo "$T5_SMALL_SUMMARY_MODEL_PATH"
-# MAGIC ls $T5_SMALL_SUMMARY_MODEL_PATH/*.model
-# MAGIC ls $T5_SMALL_SUMMARY_MODEL_PATH/*.json
+# MAGIC ls -lh $T5_SMALL_SUMMARY_MODEL_PATH/*.model
+# MAGIC ls -lh $T5_SMALL_SUMMARY_MODEL_PATH/*.json
 
 # COMMAND ----------
 
@@ -224,6 +226,10 @@ os.environ['CLEANED_REVIEWS_PATH'] = CLEANED_REVIEWS_PATH
 
 # MAGIC %md
 # MAGIC ## Test the tuned model
+# MAGIC
+# MAGIC Should take 2m on a 16gb cluster.
+# MAGIC
+# MAGIC We filter on the word hybrid to get a certain class of review.
 
 # COMMAND ----------
 
@@ -250,7 +256,8 @@ review_by_product_df = camera_reviews_df.groupBy("product_id").\
   select("product_id", "n", concat_ws(" ", col("review_array")).alias("reviews")).\
   withColumn("summary", summarize_review("reviews"))
 
-display(review_by_product_df.select("reviews", "summary").limit(10))
+# We filter on the word hybrid to get a certain class of review
+display(review_by_product_df.where("reviews like '% hybrid %'").select("reviews", "summary").limit(1))
 
 # COMMAND ----------
 

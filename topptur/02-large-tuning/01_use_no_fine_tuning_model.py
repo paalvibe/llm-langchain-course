@@ -105,7 +105,8 @@ review_by_product_df = camera_reviews_df.groupBy("product_id").\
   select("product_id", "n", concat_ws(" ", col("review_array")).alias("reviews")).\
   withColumn("summary", summarize_review("reviews"))
 
-display(review_by_product_df.select("reviews", "summary").limit(2))
+# We filter on the word hybrid to get a certain class of review
+display(review_by_product_df.where("reviews like '% hybrid %'").select("reviews", "summary").limit(1))
 
 # COMMAND ----------
 
