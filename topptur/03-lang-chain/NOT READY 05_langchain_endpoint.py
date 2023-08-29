@@ -1,15 +1,16 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Load Llama-2-7b-chat-hf from LangChain on Databricks
+# MAGIC # Load dolly-v2-7b from LangChain on Databricks
 # MAGIC
 # MAGIC This example notebook is adapts the [LangChain integration documentation](https://python.langchain.com/docs/modules/model_io/models/llms/integrations/databricks), and shows how to wrap Databricks endpoints as LLMs in LangChain. It supports two endpoint types:
 # MAGIC
 # MAGIC - Serving endpoint, recommended for production and development. See `02_mlflow_logging_inference` for how to create one.
 # MAGIC - Cluster driver proxy app, recommended for iteractive development. See `03_serve_driver_proxy` for how to create one.
 # MAGIC
-# MAGIC Environment tested:
-# MAGIC - MLR: 13.2 ML
-# MAGIC - Instance: `i3.xlarge` on AWS for wrapping serving endpoint, `g5.4xlarge` on AWS for wrapping a cluster driver proxy app (same instance as the driver proxy app)
+# MAGIC
+# MAGIC Environment for this notebook:
+# MAGIC - Runtime: 13.2 GPU ML Runtime
+# MAGIC - Instance: g4dn.xlarge cluster (16gb, 4 cores) on AWS
 
 # COMMAND ----------
 
@@ -29,11 +30,11 @@
 from langchain.llms import Databricks
 
 # This model serving endpoint is created in `02_mlflow_logging_inference`
-llm = Databricks(endpoint_name='llama2-7b-chat')
+llm = Databricks(endpoint_name='dolly-v2-7b')
 
 # COMMAND ----------
 
-result = llm("How to master Python in 3 days?")
+result = llm("How to master Python in 3 days?", temperature=0.1, max_new_tokens=200)
 
 displayHTML(result)
 

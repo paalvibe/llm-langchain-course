@@ -179,6 +179,11 @@ summarizer_pipeline = pipeline("summarization",\
 
 # COMMAND ----------
 
+import os
+
+os.environ['MLFLOW_EXPERIMENT_NAME'] = envsetup.SMALL_TUNED_ML_EXPERIMENT_PATH
+os.environ['MLFLOW_FLATTEN_PARAMS'] = "true"
+
 import mlflow
 import torch
 
@@ -193,7 +198,7 @@ class ReviewModel(mlflow.pyfunc.PythonModel):
     
     def predict(self, context, model_input):
         prompt = model_input['prompt']
-        texts = ("summarize: " + prompt.iloc[:,0]).to_list()
+        texts = ("summarize: " + prompt).to_list()
         pipe = self.pipeline(texts, truncation=True, batch_size=8)
         return pd.Series([s['summary_text'] for s in pipe])
 
@@ -213,7 +218,7 @@ mlflow.set_registry_uri("databricks-uc")
 
 # COMMAND ----------
 
-envsetup.SMALL_TUNED_ML_EXPERIMENT_PATH = f"/Users/{envsetup.EMAIL}/fine-tuning-t5"
+envsetup.SMALL_TUNED_ML_EXPERIMENT_PATH
 
 # COMMAND ----------
 
@@ -244,10 +249,15 @@ signature = ModelSignature(inputs=input_schema, outputs=output_schema)
 input_example=pd.DataFrame({
             "prompt": ["I actually did not receive it, was offered a refund and we parted ways. Was sent a pair of speakers, that only work overseas because of the power plug. was told to dispose of them any way I desireed. I finally broke away from my 35mm Nikkon and decided to try a digital one...one draw back, the LCD screen is impossible to view in bright light. I had to move to shade or snap and hope they came out. I was able to view in the index at the pics to see if they turned out before I moved on which helped. There is a ev+1.5 to ev-1.5 and a brightness control along with choice of event setting. We bought our camera this past spring to use at a wedding.  It was awesome."]})
 
+artifacts_path = f"/tmp/{envsetup.EMAIL}/{envsetup.SMALL_TUNED_MODEL}/"
+
+artifact_title = "review_summarizer"
+
 with mlflow.start_run(run_id=last_run_id) as run:
-  mlflow.pyfunc.log_model(artifacts={"pipeline": f"/tmp/{envsetup.EMAIL}/{envsetup.SMALL_TUNED_MODEL}"}, 
-    artifact_path="review_summarizer", 
+  mlflow.pyfunc.log_model(artifacts={"pipeline": artifacts_path}, 
+    artifact_path=artifact_title,
     python_model=ReviewModel(),
+    pip_requirements=["torch", "transformers", "accelerate", "sentencepiece", "datasets", "evaluate", "rouge-score"],
     registered_model_name=registered_model_name,
     input_example=input_example,
     signature=signature)
@@ -269,28 +279,40 @@ with mlflow.start_run(run_id=last_run_id) as run:
 
 # COMMAND ----------
 
-# Configure MLflow Python client to register model in Unity Catalog
-import mlflow
-mlflow.set_registry_uri("databricks-uc")
-
-# COMMAND ----------
-
 # Register model to Unity Catalog
 # This may take 2.2 minutes to complete
 
-MODEL_NAME = envsetup.SMALL_TUNED_MODEL
+UC_PATH = envsetup.SMALL_TUNED_MODEL_UC
 
-print(f"MODEL_NAME: {MODEL_NAME}")
-registered_name = MODEL_NAME # Note that the UC model name follows the pattern <catalog_name>.<schema_name>.<model_name>, corresponding to the catalog, schema, and registered model name
+print(f"UC_PATH: {UC_PATH}")
+registered_name = UC_PATH # Note that the UC model name follows the pattern <catalog_name>.<schema_name>.<model_name>, corresponding to the catalog, schema, and registered model name
 
 result = mlflow.register_model(
-    "runs:/"+run.info.run_id+"/model",
+    "runs:/" + run.info.run_id + f"/{artifact_title}",
     registered_name,
 )
 
 # COMMAND ----------
 
-registered_name
+# MAGIC %md
+# MAGIC
+# MAGIC ### Test run the model
+
+# COMMAND ----------
+
+import mlflow
+import pandas as pd
+mlflow.set_registry_uri('databricks-uc')
+
+loaded_model = mlflow.pyfunc.load_model(f"models:/trainingmodels.dev_paldevibe_llmtopptur.t5-small-summary/8")
+
+# Make a prediction using the loaded model
+ret = loaded_model.predict(
+    {
+        "prompt": "I’m really quite amazed. I purchased the Orbi 4g LTE modem-router for non-cable WiFi connection and matched the Orbi to 4 Arlo Essential security cameras. Should work, right? Never did anything like this before. Like so many of these electronic combinations that I’ve theorized about in the past, I assumed this wouldn’t work either. I talked to several advisors – Orbi technicians, Arlo community contributors. Everyone said it should work. And it did!!!! Amazing!! The Orbi LBR20 was a bit of a challenge. The Obi app was skittish … worked sometimes, sometimes got stuck. The password used to set-up my Orbi account (Netgear) was not the same as the password needed to activate the Orbi modem-router for Internet connection; the Orbi password is printed on the label at the bottom of the Orbi unit … Oh, that password. PureTalk (really AT&T) indicated that they had coverage for my barn’s Zip Code but could not guarantee the Sim card would work with Orbi LBR20 … not quite the confidence booster I needed. Ok … so brave as I am, I purchased the PureTalk Sim card and a 6 Gig data plan. After everything arrived, I first tried to connect the Orbi wireless modem-router to the Internet using the Orbi app as instructed. Nothing automatic here. After several tries, the Orbi app asked for the APN number of my Internet service provider. What’s an APN for goodness sake? Googled “PureTalk APN” and came up with “RESELLER”. I entered “RESELLER … then my PureTalk phone number as the only User ID I knew and then my PureTalk password. No contact and no Internet. Frustration!! The next day, I called PureTalk and asked for the APN number, user ID and password. After transferring through 4 different technical service associates, I received the information (APN = RESELLER, User ID = Not set up yet, Password = Not set up yet). So, I entered “RESELLER” and nothing else (no User ID and no Password). Success!! Internet access!!! Oh, so you don’t need a password in this case!! But … I was now connected to the Internet through a Orbi 4g LTE wireless modem-router … no cable. Once I got the password and APN right, Orbi activated as promised.",
+    }
+)
+ret[0]
 
 # COMMAND ----------
 
@@ -303,7 +325,7 @@ registered_name
 # COMMAND ----------
 
 # Provide a name to the serving endpoint
-endpoint_name = MODEL_NAME
+endpoint_name = envsetup.SMALL_TUNED_MODEL
 databricks_url = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None)
 token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None)
 
@@ -317,15 +339,15 @@ deploy_url = f'{databricks_url}/api/2.0/serving-endpoints'
 
 model_version = result  # the returned result of mlflow.register_model
 endpoint_config = {
-  "name": endpoint_name,
+  "name": f"{endpoint_name}4",
   "config": {
     "served_models": [{
       "name": f'{model_version.name.replace(".", "_")}_{model_version.version}',
       "model_name": model_version.name,
       "model_version": model_version.version,
-      "workload_type": "GPU_MEDIUM",
+      "workload_type": "GPU_BIG",
       "workload_size": "Small",
-      "scale_to_zero_enabled": "False"
+      "scale_to_zero_enabled": "True"
     }]
   }
 }
@@ -341,3 +363,7 @@ if deploy_response.status_code != 200:
 # When first creating the serving endpoint, it should show that the state 'ready' is 'NOT_READY'
 # You can check the status on the Databricks model serving endpoint page, it is expected to take ~35 min for the serving endpoint to become ready
 print(deploy_response.json())
+
+# COMMAND ----------
+
+
