@@ -12,4 +12,5 @@
 2. The students should read through the `00-TEACHER-prep` folder without running it.
 3. The teacher should run through the 01-small-tuning notebooks and tune the model once (it takes one hour on a an g5.xlarge aws GPU instance). To tune it, comment in the run_summarization bash cell.
 4. The students should run through the 01-small-tuning notebooks, without running the run_summarization bash cell.
-5. If time, the students can look at the 02-extra-tasks folder.
+5. The students should run through the 02-large-tuning notebooks, without running the run_summarization bash cell.
+6. The students do the tasks in the 03-lang-chain folder.

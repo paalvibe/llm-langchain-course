@@ -103,6 +103,7 @@ os.environ['MLFLOW_EXPERIMENT_NAME']
 
 # COMMAND ----------
 
+import os
 T5_LARGE_SUMMARY_MODEL_PATH = f"{envsetup.REVIEWS_DEST_PATH}/t5-large-summary"
 os.environ['T5_LARGE_SUMMARY_MODEL_PATH'] = T5_LARGE_SUMMARY_MODEL_PATH
 T5_LARGE_SUMMARY_MODEL_PATH
@@ -194,19 +195,19 @@ T5_LARGE_SUMMARY_MODEL_PATH
 
 # COMMAND ----------
 
-# MAGIC %sh
-# MAGIC MODEL_BACKUP_DIR=/dbfs/Users/$EMAIL/backups/models
-# MAGIC echo "$MODEL_BACKUP_DIR"
-# MAGIC ls $MODEL_BACKUP_DIR/$LARGE_TUNED_MODEL
-# MAGIC
-# MAGIC MODELFILE=$MODEL_BACKUP_DIR/$LARGE_TUNED_MODEL/spiece.model
-# MAGIC if [ -f $MODELFILE ]; then
-# MAGIC    echo "Tuned model backup $MODELFILE already exists, no need to copy again."
-# MAGIC else
-# MAGIC    echo "Tuned model backup $MODELFILE does not exist. Make a backup."
-# MAGIC    mkdir -p $MODEL_BACKUP_DIR/$LARGE_TUNED_MODEL
-# MAGIC    cp $T5_LARGE_SUMMARY_MODEL_PATH/* $MODEL_BACKUP_DIR/$LARGE_TUNED_MODEL 2>/dev/null
-# MAGIC fi
+# %sh
+# MODEL_BACKUP_DIR=/dbfs/Users/$EMAIL/backups/models
+# echo "$MODEL_BACKUP_DIR"
+# ls $MODEL_BACKUP_DIR/$LARGE_TUNED_MODEL
+
+# MODELFILE=$MODEL_BACKUP_DIR/$LARGE_TUNED_MODEL/spiece.model
+# if [ -f $MODELFILE ]; then
+#    echo "Tuned model backup $MODELFILE already exists, no need to copy again."
+# else
+#    echo "Tuned model backup $MODELFILE does not exist. Make a backup."
+#    mkdir -p $MODEL_BACKUP_DIR/$LARGE_TUNED_MODEL
+#    cp $T5_LARGE_SUMMARY_MODEL_PATH/* $MODEL_BACKUP_DIR/$LARGE_TUNED_MODEL 2>/dev/null
+# fi
 
 # COMMAND ----------
 
