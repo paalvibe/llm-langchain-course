@@ -1,3 +1,3 @@
-# 01-small-tuning
+# 01-large-tuning
 
-Here we compare the results of small non-tuned model and a tuned model.
+Here we compare the results of a large non-tuned model and a tuned model.
