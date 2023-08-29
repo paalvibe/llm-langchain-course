@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC Based on blogpost https://www.databricks.com/blog/2023/03/20/fine-tuning-large-language-models-hugging-face-and-deepspeed.html
 # MAGIC
-# MAGIC This demonstrates basic fine-tuning with the `t5-large` model. This notebook should be run on an instance with 1 Ampere architecture GPU, such as an A10. Use Databricks Runtime 12.2 ML GPU or higher.
+# MAGIC This demonstrates basic fine-tuning with the `t5-large` model. This notebook should be run on an instance with 1 Ampere architecture GPU, such as an A10. Use Databricks Runtime 12.2 ML GPU or higher. On AWS, you can use `g5.4xlarge` with 64gb ram, 1  GPU.
 # MAGIC
 # MAGIC This requires a few additional Python libraries, including an update to the very latest `transformers`, and additional CUDA tools:
 
@@ -129,7 +129,7 @@ T5_LARGE_SUMMARY_MODEL_PATH
 # MAGIC %md
 # MAGIC ### Tuning the model
 # MAGIC
-# MAGIC It took almost 7 hours on an AWS g5.4xlarge single instance (64gb RAM, 1 cpu).
+# MAGIC It took almost 7 hours on an AWS g5.4xlarge single instance (64gb RAM, 1 GPU).
 # MAGIC
 # MAGIC Example result:
 # MAGIC ```
