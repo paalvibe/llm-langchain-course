@@ -76,7 +76,7 @@ def summarize_review(reviews):
 
 camera_reviews_df = spark.read.format("delta").load(f"{envsetup.CLEAN_REVIEWS_PATH}")
 
-display(camera_reviews_df.withColumn("summary", summarize_review("review_body")).select("review_body", "summary").limit(10))
+display(camera_reviews_df.withColumn("summary", summarize_review("review_body")).select("review_body", "summary").limit(4))
 
 # COMMAND ----------
 
