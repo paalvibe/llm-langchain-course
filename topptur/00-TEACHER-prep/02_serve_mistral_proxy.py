@@ -1,25 +1,21 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC
-# MAGIC # Serving Llama-2-7b-chat-hf with a cluster driver proxy app
+# MAGIC # Serving Mistral-7B-Instruct via vllm with a cluster driver proxy app
 # MAGIC
-# MAGIC This notebook enables you to run [Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) on a Databricks cluster and expose the model to LangChain via [driver proxy](https://python.langchain.com/en/latest/modules/models/llms/integrations/databricks.html#wrapping-a-cluster-driver-proxy-app).
+# MAGIC The [Mistral-7B-Instruct-v0.1](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1) Large Language Model (LLM) is a instruct fine-tuned version of the [Mistral-7B-v0.1](https://huggingface.co/mistralai/Mistral-7B-v0.1) generative text model using a variety of publicly available conversation datasets.
+# MAGIC
+# MAGIC [vllm](https://github.com/vllm-project/vllm/tree/main) is an open-source library that makes LLM inference fast with various optimizations.
 # MAGIC
 # MAGIC Environment for this notebook:
-# MAGIC - Runtime: 13.2 GPU ML Runtime
-# MAGIC - Instance: `g5.4xlarge` on AWS
-# MAGIC
-# MAGIC GPU instances that have at least 16GB GPU memory would be enough for inference on single input. On Azure, it is possible to use `Standard_NC6s_v3` or `Standard_NC4as_T4_v3`.
-# MAGIC
-# MAGIC requirements:
-# MAGIC - To get the access of the model on HuggingFace, please visit the [Meta website](https://ai.meta.com/resources/models-and-libraries/llama-downloads) and accept our license terms and acceptable use policy before submitting this form. Requests will be processed in 1-2 days.
+# MAGIC - Runtime: 14.0 GPU ML Runtime
+# MAGIC - Instance: `g5.xlarge` on AWS, `Standard_NV36ads_A10_v5` on Azure
+# MAGIC - Will not run on g4dn.4xlarge
 
 # COMMAND ----------
 
-from huggingface_hub import notebook_login
-
-# Login to Huggingface to get access to the model
-notebook_login()
+# MAGIC %pip install -U vllm==0.2.0 transformers==4.34.0 accelerate==0.20.3
+# MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -29,28 +25,17 @@ notebook_login()
 
 # COMMAND ----------
 
-# Load model to text generation pipeline
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import transformers
-import torch
+from vllm import LLM
 
-# it is suggested to pin the revision commit hash and not change it for reproducibility because the uploader might change the model afterwards; you can find the commmit history of llamav2-7b-chat in https://huggingface.co/meta-llama/Llama-2-7b-chat-hf/commits/main
-model = "meta-llama/Llama-2-7b-chat-hf"
-revision = "0ede8dd71e923db6258295621d817ca8714516d4"
+# it is suggested to pin the revision commit hash and not change it for reproducibility because the uploader might change the model afterwards; you can find the commmit history of Mistral-7B-Instruct-v0. in https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1/commits/main
+model = "mistralai/Mistral-7B-Instruct-v0.1"
+revision = "3dc28cf29d2edd31a0a7b8f0b21637059815b4d5"
 
-tokenizer = AutoTokenizer.from_pretrained(model)
-pipeline = transformers.pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    torch_dtype=torch.bfloat16,
-    trust_remote_code=True,
-    device_map="auto",
-    revision=revision,
-    return_full_text=False, # don't return the prompt, only return the generated response
-)
+llm = LLM(model=model, revision=revision)
 
 # COMMAND ----------
+
+from vllm import SamplingParams
 
 # Prompt templates as follows could guide the model to follow instructions and respond to the input, and empirically it turns out to make Falcon models produce better responses
 DEFAULT_SYSTEM_PROMPT = """\
@@ -77,18 +62,15 @@ def gen_text_for_serving(prompt, **kwargs):
     prompt = PROMPT_FOR_GENERATION_FORMAT.format(instruction=prompt)
 
     # the default max length is pretty small (20), which would cut the generated output in the middle, so it's necessary to increase the threshold to the complete response
-    if "max_new_tokens" not in kwargs:
-        kwargs["max_new_tokens"] = 512
+    if "max_tokens" not in kwargs:
+        kwargs["max_tokens"] = 512
 
-    # configure other text generation arguments
-    kwargs.update(
-        {
-            "pad_token_id": tokenizer.eos_token_id,  # Hugging Face sets pad_token_id to eos_token_id by default; setting here to not see redundant message
-            "eos_token_id": tokenizer.eos_token_id,
-        }
-    )
+    sampling_params = SamplingParams(**kwargs)
 
-    return pipeline(prompt, **kwargs)[0]['generated_text']
+    outputs = llm.generate(prompt, sampling_params=sampling_params)
+    texts = [out.outputs[0].text for out in outputs]
+
+    return texts[0]
 
 # COMMAND ----------
 
@@ -96,8 +78,8 @@ print(gen_text_for_serving("How to master Python in 3 days?"))
 
 # COMMAND ----------
 
-# See full list of configurable args: https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig
-print(gen_text_for_serving("How to master Python in 3 days?", temperature=0.1, max_new_tokens=100))
+# See full list of configurable args: https://github.com/vllm-project/vllm/blob/main/vllm/sampling_params.py
+print(gen_text_for_serving("How to master Python in 3 days?", temperature=0.1, max_tokens=100))
 
 # COMMAND ----------
 
@@ -108,10 +90,10 @@ print(gen_text_for_serving("How to master Python in 3 days?", temperature=0.1, m
 
 from flask import Flask, jsonify, request
 
-app = Flask("llama-2-7b-chat")
+app = Flask("mistral-7b-instruct")
 
 @app.route('/', methods=['POST'])
-def serve_falcon_7b_instruct():
+def serve_mistral_7b_instruct():
   resp = gen_text_for_serving(**request.json)
   return jsonify(resp)
 
@@ -120,7 +102,7 @@ def serve_falcon_7b_instruct():
 from dbruntime.databricks_repl_context import get_context
 ctx = get_context()
 
-port = "7777"
+port = "7778"
 driver_proxy_api = f"https://{ctx.browserHostName}/driver-proxy-api/o/0/{ctx.clusterId}/{port}"
 
 print(f"""
@@ -128,6 +110,67 @@ driver_proxy_api = '{driver_proxy_api}'
 cluster_id = '{ctx.clusterId}'
 port = {port}
 """)
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Store cluster vars as constants to retrieve in other notebooks
+
+# COMMAND ----------
+
+# Create table in the metastore
+constants_table = "training.llm_langchain_shared.server_constants"
+# DeltaTable.createIfNotExists(spark) \
+#   .tableName(constants_table) \
+#   .addColumn("key", "STRING") \
+#   .addColumn("val", "STRING")\
+#   .execute()
+
+schema = "training.llm_langchain_shared"
+# Grant select and modify permissions for the table to all users on the account.
+# This also works for other account-level groups and individual users.
+spark.sql(f"""
+CREATE SCHEMA IF NOT EXISTS {schema};
+""")
+
+spark.sql(f"""DROP TABLE {constants_table}""")
+          
+spark.sql(f"""
+CREATE TABLE IF NOT EXISTS {constants_table}
+  (
+    name STRING,
+    var STRING
+  )""")
+
+
+# Grant select and modify permissions for the table to all users on the account.
+# This also works for other account-level groups and individual users.
+spark.sql(f"""
+  GRANT SELECT
+  ON TABLE {constants_table}
+  TO `account users`""")
+
+# COMMAND ----------
+
+# Parse out host name
+from urllib.parse import urlparse
+host = urlparse(driver_proxy_api).netloc
+print(host) # --> www.example.test
+
+# COMMAND ----------
+
+from pyspark.sql import Row
+constants = [
+    Row("cluster_id", ctx.clusterId),
+    Row("port", port),
+    Row("driver_proxy_api", driver_proxy_api),
+    Row("host", host)
+]
+constants_df = spark.createDataFrame(constants)
+constants_df.write.insertInto(constants_table, overwrite=True)
+constants_df.show()
 
 # COMMAND ----------
 
@@ -137,7 +180,7 @@ port = {port}
 # MAGIC import requests
 # MAGIC import json
 # MAGIC
-# MAGIC def request_llamav2_7b(prompt, temperature=1.0, max_new_tokens=1024):
+# MAGIC def request_mistral_7b(prompt, temperature=1.0, max_new_tokens=1024):
 # MAGIC   token = ... # TODO: fill in with your Databricks personal access token that can access the cluster that runs this driver proxy notebook
 # MAGIC   url = ...   # TODO: fill in with the driver_proxy_api output above
 # MAGIC   
@@ -155,12 +198,12 @@ port = {port}
 # MAGIC   return response.text
 # MAGIC
 # MAGIC
-# MAGIC request_llamav2_7b("What is databricks?")
+# MAGIC request_mistral_7b("What is databricks?")
 # MAGIC ```
 # MAGIC Or you could try using ai_query([doucmentation](https://docs.databricks.com/sql/language-manual/functions/ai_query.html)) to call this driver proxy from Databricks SQL with:
 # MAGIC ```
-# MAGIC SELECT ai_query('cluster_ud:port', -- TODO: fill in the cluster_id and port number from output above.  
-# MAGIC   named_struct('prompt', 'What is databricks?', 'temperature', CAST(0.1 AS DOUble)),
+# MAGIC SELECT ai_query('cluster_id:port', -- TODO: fill in the cluster_id and port number from output above.  
+# MAGIC   named_struct('prompt', 'What is databricks?', 'temperature', CAST(0.1 AS Double)),
 # MAGIC   'returnType', 'STRING')
 # MAGIC ```
 # MAGIC Note: The [AI Functions](https://docs.databricks.com/large-language-models/ai-functions.html) is in the public preview, to enable the feature for your workspace, please submit this [form](https://docs.google.com/forms/d/e/1FAIpQLScVyh5eRioqGwuUVxj9JOiKBAo0-FWi7L3f4QWsKeyldqEw8w/viewform).
@@ -168,3 +211,7 @@ port = {port}
 # COMMAND ----------
 
 app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
+
+# COMMAND ----------
+
+
