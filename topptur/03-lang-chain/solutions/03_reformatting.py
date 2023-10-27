@@ -58,6 +58,12 @@ llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC Let's let's find a confusing text online.
+# MAGIC Source: https://www.smithsonianmag.com/smart-news/long-before-trees-overtook-the-land-earth-was-covered-by-giant-mushrooms-13709647/
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Output Parsers Method 1: Prompt Instructions & String Parsing
 
 # COMMAND ----------
@@ -118,6 +124,48 @@ llm_output
 # MAGIC
 # MAGIC 1. Sub-task 1: Generate a badly written email with syntax errors and grammatical errors, about consultants.
 # MAGIC 2. Sub-task 2: Correct the badly written email to a well written email.
+
+# COMMAND ----------
+
+email = llm("Write an email about consultants")
+print(email)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+corruption_template = """
+You will be given a well formatted string from a user with errors.
+Reformat it and make sure many words are spelled incorrectly,
+and punctuation is wrong.
+
+% USER INPUT:
+{user_input}
+
+YOUR RESPONSE:
+"""
+
+corruption_prompt = PromptTemplate(
+    input_variables=["user_input"],
+    template=corruption_template
+)
+wrong_email= llm(corruption_prompt.format(user_input=email))
+print(wrong_email)
+
+# COMMAND ----------
+
+prompt = PromptTemplate(
+    input_variables=["user_input"],
+    partial_variables={"format_instructions": format_instructions},
+    template=template
+)
+
+promptValue = prompt.format(user_input=wrong_email)
+
+llm_output = llm(promptValue)
+print(llm_output)
 
 # COMMAND ----------
 

@@ -33,44 +33,31 @@
 
 # COMMAND ----------
 
-# import torch
-# from transformers import pipeline
-
-# generate_text = pipeline(model="databricks/dolly-v2-7b", torch_dtype=torch.bfloat16, 
-#                          revision='d632f0c8b75b1ae5b26b250d25bfba4e99cb7c6f',
-#                          trust_remote_code=True, device_map="auto", return_full_text=True)
+# MAGIC %md Get llm server constants from constants table
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC
-# MAGIC You can create a prompt that either has only an instruction or has an instruction with context:
+constants_table = "training.llm_langchain_shared.server_constants"
+constants_df = spark.read.table(constants_table)
+display(constants_df)
+raw_dict = constants_df.toPandas().to_dict()
+names = raw_dict['name'].values()
+vars = raw_dict['var'].values()
+constants = dict(zip(names, vars))
+cluster_id = constants['cluster_id']
+port = constants['port']
+host = constants['host']
+
+# COMMAND ----------
+
+# MAGIC %md Create llm object connecting to mistral server
 
 # COMMAND ----------
 
 from langchain import PromptTemplate, LLMChain
-# from langchain.llms import HuggingFacePipeline
 from langchain.llms import Databricks
-
-# import os
-# os.environ['DATABRICKS_TOKEN'] = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
-
 api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
-cluster_id = '1026-140257-76wqxww4'
-port = 7777
-host = "dbc-11ce6ca4-7321.cloud.databricks.com"
-
-# TODO: this cluster ID is a place holder, please replace `cluster_id` with the actual cluster ID of the server proxy app's cluster
-llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port="7777", api_token=api_token,)
-
-# # hf_pipeline = HuggingFacePipeline(pipeline=generate_text)
-# llm = Databricks(cluster_id="0000-000000-xxxxxxxx"
-#                  cluster_driver_port="7777",
-#                  transform_input_fn=transform_input,
-#                  transform_output_fn=transform_output,)
-
-# llm_chain = LLMChain(llm=llm, prompt=prompt)
-# llm_context_chain = LLMChain(llm=llm, prompt=prompt_with_context)
+llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api_token=api_token,)
 
 # COMMAND ----------
 
@@ -88,6 +75,11 @@ prompt_with_context = PromptTemplate(
 
 llm_chain = LLMChain(llm=llm, prompt=prompt)
 llm_context_chain = LLMChain(llm=llm, prompt=prompt_with_context)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Create summarization prompt
 
 # COMMAND ----------
 
@@ -110,8 +102,7 @@ prompt = PromptTemplate(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Let's let's find a confusing text online.
-# MAGIC Source: https://www.smithsonianmag.com/smart-news/long-before-trees-overtook-the-land-earth-was-covered-by-giant-mushrooms-13709647/
+# MAGIC Let's use a long text.
 
 # COMMAND ----------
 
@@ -154,7 +145,7 @@ print (output)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Task:
+# MAGIC ## Task:
 # MAGIC
 # MAGIC Get a summary which will be interesting to read for a 15 year old gamer.
 # MAGIC

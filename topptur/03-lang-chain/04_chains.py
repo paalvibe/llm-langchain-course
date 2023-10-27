@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Reformatting with langchain on Databricks
+# MAGIC # reformatting with langchain on Databricks
 # MAGIC
 # MAGIC We use a mistral model served from another cluster which has GPU.
 # MAGIC
@@ -13,14 +13,6 @@
 # MAGIC Examples from here:
 # MAGIC
 # MAGIC https://github.com/gkamradt/langchain-tutorials/blob/main/LangChain%20Cookbook%20Part%201%20-%20Fundamentals.ipynb
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Inference
-# MAGIC The example in the model card should also work on Databricks with the same environment.
-# MAGIC
-# MAGIC Takes about 8m on g4dn.xlarge cluster (16gb, 4 cores).
 
 # COMMAND ----------
 
@@ -54,6 +46,12 @@ from langchain import PromptTemplate, LLMChain
 from langchain.llms import Databricks
 api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api_token=api_token,)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Let's let's find a confusing text online.
+# MAGIC Source: https://www.smithsonianmag.com/smart-news/long-before-trees-overtook-the-land-earth-was-covered-by-giant-mushrooms-13709647/
 
 # COMMAND ----------
 
@@ -114,10 +112,76 @@ llm_output
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Task: generate and reformat a badly formatted email
+# MAGIC # Task: reformat a badly formatted email
 # MAGIC
 # MAGIC 1. Sub-task 1: Generate a badly written email with syntax errors and grammatical errors, about consultants.
 # MAGIC 2. Sub-task 2: Correct the badly written email to a well written email.
+
+# COMMAND ----------
+
+email = llm("Write an email about consultants")
+print(email)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+corruption_template = """
+You will be given a well formatted string from a user with errors.
+Reformat it and make sure many words are spelled incorrectly,
+and punctuation is wrong.
+
+% USER INPUT:
+{user_input}
+
+YOUR RESPONSE:
+"""
+
+corruption_prompt = PromptTemplate(
+    input_variables=["user_input"],
+    template=corruption_template
+)
+wrong_email= llm(corruption_prompt.format(user_input=email))
+print(wrong_email)
+
+# COMMAND ----------
+
+prompt = PromptTemplate(
+    input_variables=["user_input"],
+    partial_variables={"format_instructions": format_instructions},
+    template=template
+)
+
+promptValue = prompt.format(user_input=wrong_email)
+
+llm_output = llm(promptValue)
+print(llm_output)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
