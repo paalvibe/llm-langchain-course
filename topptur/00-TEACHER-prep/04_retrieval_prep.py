@@ -204,6 +204,11 @@ vectordb = Chroma(persist_directory=persist_path,
 # COMMAND ----------
 
 # MAGIC %sh
+# MAGIC ls test_vector_db/*
+
+# COMMAND ----------
+
+# MAGIC %sh
 # MAGIC cp -r test_vector_db /Volumes/training/data/langchain/test_vector_db
 
 # COMMAND ----------
@@ -350,64 +355,11 @@ len(unique_docs)
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-# MAGIC %md 
-# MAGIC ## Contextual Compression
-# MAGIC Then we'll move onto contextual compression. This will take the chunk that you've made (above) and compress it's information down to the parts relevant to your query.
-# MAGIC
-# MAGIC Say that you have a chunk that has 3 topics within it, you only really care about one of them though, this compressor will look at your query, see that you only need one of the 3 topics, then extract & return that one topic.
-# MAGIC
-# MAGIC This one is a bit more expensive because each doc returned will get processed an additional time (to pull out the relevant data)
-
-# COMMAND ----------
-
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor
-
-# COMMAND ----------
-
-# MAGIC %md We first need to set up our compressor, it's cool that it's a separate object because that means you can use it elsewhere outside this retriever as well.
-
-# COMMAND ----------
-
-# llm = ChatOpenAI(temperature=0, model='gpt-4')
-
-compressor = LLMChainExtractor.from_llm(llm)
-compression_retriever = ContextualCompressionRetriever(base_compressor=compressor,
-                                                       base_retriever=vectordb.as_retriever())
-
-# COMMAND ----------
-
 # MAGIC %md
-# MAGIC First, an example of compression. Below we have one of our splits that we made above
-
-# COMMAND ----------
-
-splits[0].page_content
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC Now we are going to pass a question to it and with that question we will compress the doc. The cool part is this doc will be contextually compressed, meaning the resulting file will only have the information relevant to the question.
-
-# COMMAND ----------
-
-compressor.compress_documents(documents=[splits[0]], query="test for what you like to do")
-
-# COMMAND ----------
-
-
+# MAGIC
+# MAGIC TODO: Add prompt part from here
+# MAGIC
+# MAGIC https://python.langchain.com/docs/modules/data_connection/retrievers/MultiQueryRetriever
 
 # COMMAND ----------
 

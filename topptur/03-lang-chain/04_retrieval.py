@@ -325,6 +325,12 @@ len(unique_docs)
 
 # COMMAND ----------
 
+# MAGIC %md TODO
+# MAGIC
+# MAGIC Add missing code to run prompt, from here: https://python.langchain.com/docs/modules/data_connection/retrievers/MultiQueryRetriever
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC
 # MAGIC ## Task
@@ -344,7 +350,7 @@ len(unique_docs)
 # COMMAND ----------
 
 # MAGIC %md 
-# MAGIC ## Contextual Compression
+# MAGIC ## TODO Contextual Compression
 # MAGIC Then we'll move onto contextual compression. This will take the chunk that you've made (above) and compress it's information down to the parts relevant to your query.
 # MAGIC
 # MAGIC Say that you have a chunk that has 3 topics within it, you only really care about one of them though, this compressor will look at your query, see that you only need one of the 3 topics, then extract & return that one topic.
