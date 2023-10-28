@@ -35,7 +35,6 @@
 
 constants_table = "training.llm_langchain_shared.server_constants"
 constants_df = spark.read.table(constants_table)
-display(constants_df)
 raw_dict = constants_df.toPandas().to_dict()
 names = raw_dict['name'].values()
 vars = raw_dict['var'].values()
@@ -43,6 +42,7 @@ constants = dict(zip(names, vars))
 cluster_id = constants['cluster_id']
 port = constants['port']
 host = constants['host']
+api_token = constants['api_token']
 
 # COMMAND ----------
 
@@ -52,7 +52,6 @@ host = constants['host']
 
 from langchain import PromptTemplate, LLMChain
 from langchain.llms import Databricks
-api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api_token=api_token,)
 
 # COMMAND ----------
