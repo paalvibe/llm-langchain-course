@@ -102,7 +102,7 @@ def serve_mistral_7b_instruct():
 from dbruntime.databricks_repl_context import get_context
 ctx = get_context()
 
-port = "8000"
+port = "8001"
 driver_proxy_api = f"https://{ctx.browserHostName}/driver-proxy-api/o/0/{ctx.clusterId}/{port}"
 
 print(f"""
@@ -161,7 +161,19 @@ print(host) # --> www.example.test
 
 # COMMAND ----------
 
+
+
+# COMMAND ----------
+
 from pyspark.sql import Row
+api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
+constants = [
+    Row("cluster_id", ctx.clusterId),
+    Row("port", port),
+    Row("driver_proxy_api", driver_proxy_api),
+    Row("host", host),
+    Row("api_token", api_token),
+]
 constants = [
     Row("cluster_id", ctx.clusterId),
     Row("port", port),
