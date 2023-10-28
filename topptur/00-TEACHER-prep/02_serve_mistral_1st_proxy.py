@@ -162,11 +162,13 @@ print(host) # --> www.example.test
 # COMMAND ----------
 
 from pyspark.sql import Row
+api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 constants = [
     Row("cluster_id", ctx.clusterId),
     Row("port", port),
     Row("driver_proxy_api", driver_proxy_api),
-    Row("host", host)
+    Row("host", host),
+    Row("api_token", api_token),
 ]
 constants_df = spark.createDataFrame(constants)
 constants_df.write.insertInto(constants_table, overwrite=True)
