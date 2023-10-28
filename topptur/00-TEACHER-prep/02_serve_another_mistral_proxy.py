@@ -102,7 +102,7 @@ def serve_mistral_7b_instruct():
 from dbruntime.databricks_repl_context import get_context
 ctx = get_context()
 
-port = "8001"
+port = "8010"
 driver_proxy_api = f"https://{ctx.browserHostName}/driver-proxy-api/o/0/{ctx.clusterId}/{port}"
 
 print(f"""
@@ -121,7 +121,7 @@ port = {port}
 # COMMAND ----------
 
 # Create table in the metastore
-constants_table = "training.llm_langchain_shared.server_constants"
+constants_table = "training.llm_langchain_shared.server3_constants"
 # DeltaTable.createIfNotExists(spark) \
 #   .tableName(constants_table) \
 #   .addColumn("key", "STRING") \

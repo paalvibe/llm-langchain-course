@@ -408,3 +408,7 @@ compressor.compress_documents(documents=[splits[0]], query="test for what you li
 # COMMAND ----------
 
 
+
+# COMMAND ----------
+
+
