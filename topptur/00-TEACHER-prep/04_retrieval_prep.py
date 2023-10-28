@@ -158,10 +158,38 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC
+# MAGIC USE CATALOG training;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC CREATE SCHEMA IF NOT EXISTS data;
+# MAGIC use schema data;
+# MAGIC CREATE VOLUME IF NOT EXISTS langchain
+# MAGIC     COMMENT 'Volume for langchain example data';
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC ls -la /Volumes/training/data/langchain
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC mkdir -p /Volumes/training/data/langchain/langchaintest_vector_db/
+# MAGIC ls /Volumes/training/data/langchain/langchaintest_vector_db/
+
+# COMMAND ----------
+
 if 'vectordb' in globals(): # If you've already made your vectordb this will delete it so you start fresh
     vectordb.delete_collection()
 
 persist_path = "dbfs:/FileStore/HuggingFace/data/demo_langchain/test_vector_db/"
+# persist_path = "dbfs:/Volumes/training/data/langchain/test_vector_db/"
+persist_path = "test_vector_db"
 # embedding = OpenAIEmbeddings()
 vectordb_persisted = Chroma.from_documents(documents=splits, 
                                  embedding=embedding_model,
@@ -172,6 +200,15 @@ vectordb = Chroma(persist_directory=persist_path,
                     embedding_function=embedding_model)
 #vector_db_path = 'dbfs:/FileStore/HuggingFace/data/demo_langchain/test_vector_db/'
 # client = chromadb.PersistentClient(path=vector_db_path)
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC cp -r test_vector_db /Volumes/training/data/langchain/test_vector_db
+
+# COMMAND ----------
+
+# cp -r  
 
 # COMMAND ----------
 
