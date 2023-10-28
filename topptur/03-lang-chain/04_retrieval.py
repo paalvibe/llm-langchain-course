@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC We use a mistral model served from another cluster which has GPU.
 # MAGIC
-# MAGIC Can be run on a non-gpu cluster.
+# MAGIC Can be run on a non-gpu cluster like UC Shared Cluster 1.
 # MAGIC
 # MAGIC ## What is Langchain?
 # MAGIC
@@ -166,6 +166,22 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 
 # COMMAND ----------
 
+# MAGIC %ls /Volumes/training/data/langchain/test_vector_db
+
+# COMMAND ----------
+
+# MAGIC %ls
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC # Make local copy of test_vector_db, prepped by teacher
+# MAGIC # Chroma does not know how to access dbfs
+# MAGIC cp -r /Volumes/training/data/langchain/test_vector_db test_vector_db 
+
+# COMMAND ----------
+
+persist_path = "test_vector_db"
 vectordb = Chroma(persist_directory=persist_path,
                     embedding_function=embedding_model)
 
@@ -309,7 +325,13 @@ len(unique_docs)
 
 # COMMAND ----------
 
-
+# MAGIC %md
+# MAGIC
+# MAGIC ## Task
+# MAGIC
+# MAGIC Change the template to improve the results.
+# MAGIC
+# MAGIC Post your prompts
 
 # COMMAND ----------
 
