@@ -56,7 +56,6 @@ constants = dict(zip(names, vars))
 cluster_id = constants['cluster_id']
 port = constants['port']
 host = constants['host']
-api_token = constants['api_token']
 
 # COMMAND ----------
 
@@ -66,6 +65,7 @@ api_token = constants['api_token']
 
 from langchain import PromptTemplate, LLMChain
 from langchain.llms import Databricks
+api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api_token=api_token,)
 
 # COMMAND ----------
@@ -125,14 +125,6 @@ embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-zh-v1
 
 # COMMAND ----------
 
-# MAGIC %md ## Load vector DB
-# MAGIC
-# MAGIC A vector db of Paul Graham essays has been prepared in ../00-Teacher-prep/04_retrieval_prep
-# MAGIC
-# MAGIC Embeddings vector DB allows us to interact with large texts.
-
-# COMMAND ----------
-
 # MAGIC %ls ../../data/
 
 # COMMAND ----------
@@ -166,8 +158,20 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 
 # COMMAND ----------
 
+if 'vectordb' in globals(): # If you've already made your vectordb this will delete it so you start fresh
+    vectordb.delete_collection()
+
+persist_path = "dbfs:/FileStore/HuggingFace/data/demo_langchain/test_vector_db/"
+# embedding = OpenAIEmbeddings()
+vectordb_persisted = Chroma.from_documents(documents=splits, 
+                                 embedding=embedding_model,
+                                 persist_directory=persist_path)
+vectordb_persisted.persist()
+# vectordb_persisted = None
 vectordb = Chroma(persist_directory=persist_path,
                     embedding_function=embedding_model)
+#vector_db_path = 'dbfs:/FileStore/HuggingFace/data/demo_langchain/test_vector_db/'
+# client = chromadb.PersistentClient(path=vector_db_path)
 
 # COMMAND ----------
 
