@@ -46,9 +46,8 @@
 
 # COMMAND ----------
 
-constants_table = "training.llm_langchain_shared.server_constants"
+constants_table = "training.llm_langchain_shared.server2_constants"
 constants_df = spark.read.table(constants_table)
-display(constants_df)
 raw_dict = constants_df.toPandas().to_dict()
 names = raw_dict['name'].values()
 vars = raw_dict['var'].values()
@@ -70,7 +69,8 @@ llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api
 
 # COMMAND ----------
 
-
+# MAGIC %sql
+# MAGIC GRANT ALL PRIVILEGES ON TABLE training.llm_langchain_shared.server_constants TO training;
 
 # COMMAND ----------
 
@@ -187,9 +187,10 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 if 'vectordb' in globals(): # If you've already made your vectordb this will delete it so you start fresh
     vectordb.delete_collection()
 
-persist_path = "dbfs:/FileStore/HuggingFace/data/demo_langchain/test_vector_db/"
+# Didnt get it to write straight to dfgs. Chroma gives IO Error or stores dbfs as a dir name
+# persist_path = "dbfs:/FileStore/HuggingFace/data/demo_langchain/test_vector_db/"
 # persist_path = "dbfs:/Volumes/training/data/langchain/test_vector_db/"
-persist_path = "test_vector_db"
+persist_path = "/tmp/prep/test_vector_db"
 # embedding = OpenAIEmbeddings()
 vectordb_persisted = Chroma.from_documents(documents=splits, 
                                  embedding=embedding_model,
@@ -204,12 +205,15 @@ vectordb = Chroma(persist_directory=persist_path,
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC ls test_vector_db/*
+# MAGIC ls /tmp/prep/test_vector_db/*
 
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC cp -r test_vector_db /Volumes/training/data/langchain/test_vector_db
+# MAGIC # Clean old dir
+# MAGIC rm -rf /Volumes/training/data/langchain/test_vector_db
+# MAGIC # Add new dir 
+# MAGIC cp -r /tmp/prep/test_vector_db /Volumes/training/data/langchain/test_vector_db
 
 # COMMAND ----------
 

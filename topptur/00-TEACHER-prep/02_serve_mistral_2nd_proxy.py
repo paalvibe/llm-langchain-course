@@ -121,7 +121,7 @@ port = {port}
 # COMMAND ----------
 
 # Create table in the metastore
-constants_table = "training.llm_langchain_shared.server_constants"
+constants_table = "training.llm_langchain_shared.server2_constants"
 # DeltaTable.createIfNotExists(spark) \
 #   .tableName(constants_table) \
 #   .addColumn("key", "STRING") \
@@ -135,7 +135,7 @@ spark.sql(f"""
 CREATE SCHEMA IF NOT EXISTS {schema};
 """)
 
-spark.sql(f"""DROP TABLE {constants_table}""")
+spark.sql(f"""DROP TABLE IF EXISTS {constants_table}""")
           
 spark.sql(f"""
 CREATE TABLE IF NOT EXISTS {constants_table}
@@ -151,6 +151,12 @@ spark.sql(f"""
   GRANT SELECT
   ON TABLE {constants_table}
   TO `account users`""")
+
+
+# Set ownership of table to training group so all training users can recreate these credentials
+spark.sql(f"""
+ALTER TABLE {constants_table} SET OWNER TO training;""")
+
 
 # COMMAND ----------
 

@@ -152,6 +152,10 @@ spark.sql(f"""
   ON TABLE {constants_table}
   TO `account users`""")
 
+# Set ownership of table to training group so all training users can recreate these credentials
+spark.sql(f"""
+ALTER TABLE {constants_table} SET OWNER TO training;""")
+
 # COMMAND ----------
 
 # Parse out host name
