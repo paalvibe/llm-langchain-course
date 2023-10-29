@@ -351,31 +351,27 @@ llm.predict(text=PROMPT.format_prompt(
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-# MAGIC %md TODO
-# MAGIC
-# MAGIC Add missing code to run prompt, from here: https://python.langchain.com/docs/modules/data_connection/retrievers/MultiQueryRetriever
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC
 # MAGIC ## Task
 # MAGIC
-# MAGIC Change the template to improve the results.
-# MAGIC
-# MAGIC Post your prompts
+# MAGIC Change the QUERY_PROMPT to improve the results.
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
