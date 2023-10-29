@@ -69,11 +69,6 @@ llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC GRANT ALL PRIVILEGES ON TABLE training.llm_langchain_shared.server_constants TO training;
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC ![./images/rag_pipeline.png](Rag pipeline)
 
@@ -125,10 +120,6 @@ embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-zh-v1
 
 # COMMAND ----------
 
-# MAGIC %ls ../../data/
-
-# COMMAND ----------
-
 loader = DirectoryLoader('../../data/PaulGrahamEssaysLarge/', glob="**/*.txt", show_progress=True)
 
 docs = loader.load()
@@ -174,23 +165,18 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC ls -la /Volumes/training/data/langchain
+# MAGIC rm -rf ./test_vector_db
+# MAGIC mkdir -p ./test_vector_db
 
 # COMMAND ----------
 
-# MAGIC %sh
-# MAGIC mkdir -p /Volumes/training/data/langchain/langchaintest_vector_db/
-# MAGIC ls /Volumes/training/data/langchain/langchaintest_vector_db/
-
-# COMMAND ----------
-
-if 'vectordb' in globals(): # If you've already made your vectordb this will delete it so you start fresh
-    vectordb.delete_collection()
+# if 'vectordb_persisted' in globals(): # If you've already made your vectordb this will delete it so you start fresh
+#     vectordb_persisted.delete_collection()
 
 # Didnt get it to write straight to dfgs. Chroma gives IO Error or stores dbfs as a dir name
-# persist_path = "dbfs:/FileStore/HuggingFace/data/demo_langchain/test_vector_db/"
 # persist_path = "dbfs:/Volumes/training/data/langchain/test_vector_db/"
-persist_path = "/tmp/prep/test_vector_db"
+# Cannot write to /tmp either, Chroma DB gives (cannot write to read only db error)
+persist_path = "./test_vector_db"
 # embedding = OpenAIEmbeddings()
 vectordb_persisted = Chroma.from_documents(documents=splits, 
                                  embedding=embedding_model,
@@ -199,30 +185,20 @@ vectordb_persisted.persist()
 # vectordb_persisted = None
 vectordb = Chroma(persist_directory=persist_path,
                     embedding_function=embedding_model)
-#vector_db_path = 'dbfs:/FileStore/HuggingFace/data/demo_langchain/test_vector_db/'
-# client = chromadb.PersistentClient(path=vector_db_path)
-
-# COMMAND ----------
-
-# MAGIC %sh
-# MAGIC ls /tmp/prep/test_vector_db/*
 
 # COMMAND ----------
 
 # MAGIC %sh
 # MAGIC # Clean old dir
+# MAGIC mkdir -p /Volumes/training/data/langchain
 # MAGIC rm -rf /Volumes/training/data/langchain/test_vector_db
-# MAGIC # Add new dir 
-# MAGIC cp -r /tmp/prep/test_vector_db /Volumes/training/data/langchain/test_vector_db
-
-# COMMAND ----------
-
-# cp -r  
+# MAGIC # Move files to volume, to avoid adding to git
+# MAGIC cp -r ./test_vector_db /Volumes/training/data/langchain/test_vector_db
 
 # COMMAND ----------
 
 # MAGIC %md 
-# MAGIC ## MultiQuery
+# MAGIC ## Test MultiQuery to evaluate vectordb
 # MAGIC This retrieval method will generated 3 additional questions to get a total of 4 queries (with the users included) that will be used to go retrieve documents. This is helpful when you want to retrieve documents which are similar in meaning to your question.
 # MAGIC
 
@@ -271,6 +247,7 @@ unique_docs = retriever_from_llm.get_relevant_documents(query=question)
 
 # COMMAND ----------
 
+# Should return 9
 len(unique_docs)
 
 # COMMAND ----------
@@ -300,70 +277,12 @@ llm.predict(text=PROMPT.format_prompt(
 
 # COMMAND ----------
 
-# MAGIC %md ### Supplying your own prompt
-# MAGIC You can also supply a prompt along with an output parser to split the results into a list of queries.
+# MAGIC %md ## Clean up git repo from vector files
 
 # COMMAND ----------
 
-from typing import List
-from langchain.chains import LLMChain
-from pydantic import BaseModel, Field
-from langchain.prompts import PromptTemplate
-from langchain.output_parsers import PydanticOutputParser
-
-
-# Output parser will split the LLM result into a list of queries
-class LineList(BaseModel):
-    # "lines" is the key (attribute name) of the parsed output
-    lines: List[str] = Field(description="Lines of text")
-
-
-class LineListOutputParser(PydanticOutputParser):
-    def __init__(self) -> None:
-        super().__init__(pydantic_object=LineList)
-
-    def parse(self, text: str) -> LineList:
-        lines = text.strip().split("\n")
-        return LineList(lines=lines)
-
-
-output_parser = LineListOutputParser()
-
-QUERY_PROMPT = PromptTemplate(
-    input_variables=["question"],
-    template="""You are an AI language model assistant. Your task is to generate five 
-    different versions of the given user question to retrieve relevant documents from a vector 
-    database. By generating multiple perspectives on the user question, your goal is to help
-    the user overcome some of the limitations of the distance-based similarity search. 
-    Provide these alternative questions separated by newlines.
-    Original question: {question}""",
-)
-# llm = ChatOpenAI(temperature=0)
-
-# Chain
-llm_chain = LLMChain(llm=llm, prompt=QUERY_PROMPT, output_parser=output_parser)
-
-# Other inputs
-question = "What are the approaches to Task Decomposition?"
-
-# Run
-retriever = MultiQueryRetriever(
-    retriever=vectordb.as_retriever(), llm_chain=llm_chain, parser_key="lines"
-)  # "lines" is the key (attribute name) of the parsed output
-
-# Results
-unique_docs = retriever.get_relevant_documents(
-    query="What does the course say about regression?"
-)
-len(unique_docs)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC
-# MAGIC TODO: Add prompt part from here
-# MAGIC
-# MAGIC https://python.langchain.com/docs/modules/data_connection/retrievers/MultiQueryRetriever
+# MAGIC %sh
+# MAGIC rm -rf ./test_vector_db
 
 # COMMAND ----------
 
