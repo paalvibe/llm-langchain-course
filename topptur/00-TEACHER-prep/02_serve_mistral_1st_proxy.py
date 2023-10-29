@@ -161,6 +161,10 @@ print(host) # --> www.example.test
 
 # COMMAND ----------
 
+api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
+
+# COMMAND ----------
+
 from pyspark.sql import Row
 api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 constants = [
@@ -172,7 +176,6 @@ constants = [
 ]
 constants_df = spark.createDataFrame(constants)
 constants_df.write.insertInto(constants_table, overwrite=True)
-constants_df.show()
 
 # COMMAND ----------
 
