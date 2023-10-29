@@ -327,6 +327,42 @@ len(unique_docs)
 
 # COMMAND ----------
 
+# MAGIC %md Ok now let's put those docs into a prompt template which we'll use as context
+
+# COMMAND ----------
+
+prompt_template = """Use the following pieces of context to answer the question at the end.
+If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+{context}
+
+Question: {question}
+Answer:"""
+PROMPT = PromptTemplate(
+    template=prompt_template, input_variables=["context", "question"]
+)
+
+# COMMAND ----------
+
+llm.predict(text=PROMPT.format_prompt(
+    context=unique_docs,
+    question=question
+).text)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
 # MAGIC %md TODO
 # MAGIC
 # MAGIC Add missing code to run prompt, from here: https://python.langchain.com/docs/modules/data_connection/retrievers/MultiQueryRetriever
@@ -340,6 +376,14 @@ len(unique_docs)
 # MAGIC Change the template to improve the results.
 # MAGIC
 # MAGIC Post your prompts
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
