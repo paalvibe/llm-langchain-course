@@ -173,7 +173,7 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 # MAGIC %sh
 # MAGIC # Make local copy of test_vector_db, prepped by teacher
 # MAGIC # Chroma does not know how to access dbfs
-# MAGIC # rm -rf ./test_vector_db
+# MAGIC rm -rf ./test_vector_db
 # MAGIC cp -r /Volumes/training/data/langchain/test_vector_db test_vector_db
 
 # COMMAND ----------
