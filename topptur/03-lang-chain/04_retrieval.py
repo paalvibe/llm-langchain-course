@@ -170,20 +170,21 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 
 # COMMAND ----------
 
-# MAGIC %ls
-
-# COMMAND ----------
-
 # MAGIC %sh
 # MAGIC # Make local copy of test_vector_db, prepped by teacher
 # MAGIC # Chroma does not know how to access dbfs
-# MAGIC cp -r /Volumes/training/data/langchain/test_vector_db test_vector_db 
+# MAGIC # rm -rf ./test_vector_db
+# MAGIC cp -r /Volumes/training/data/langchain/test_vector_db test_vector_db
 
 # COMMAND ----------
 
-persist_path = "test_vector_db"
+persist_path = "./test_vector_db"
 vectordb = Chroma(persist_directory=persist_path,
                     embedding_function=embedding_model)
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
@@ -237,6 +238,7 @@ unique_docs = retriever_from_llm.get_relevant_documents(query=question)
 
 # COMMAND ----------
 
+# Should be more than 0
 len(unique_docs)
 
 # COMMAND ----------
