@@ -46,7 +46,7 @@
 
 # COMMAND ----------
 
-constants_table = "training.llm_langchain_shared.server2_constants"
+constants_table = "training.llm_langchain_shared.server1_constants"
 constants_df = spark.read.table(constants_table)
 raw_dict = constants_df.toPandas().to_dict()
 names = raw_dict['name'].values()

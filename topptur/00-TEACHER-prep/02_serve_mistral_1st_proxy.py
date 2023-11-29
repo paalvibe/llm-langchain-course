@@ -121,12 +121,19 @@ port = {port}
 # COMMAND ----------
 
 # Create table in the metastore
-constants_table = "training.llm_langchain_shared.server_constants"
+constants_table = "training.llm_langchain_shared.server1_constants"
 # DeltaTable.createIfNotExists(spark) \
 #   .tableName(constants_table) \
 #   .addColumn("key", "STRING") \
 #   .addColumn("val", "STRING")\
 #   .execute()
+
+catalog = "training"
+
+spark.sql(f"""
+CREATE CATALOG IF NOT EXISTS {catalog};
+""")
+
 
 schema = "training.llm_langchain_shared"
 # Grant select and modify permissions for the table to all users on the account.
@@ -135,7 +142,7 @@ spark.sql(f"""
 CREATE SCHEMA IF NOT EXISTS {schema};
 """)
 
-spark.sql(f"""DROP TABLE {constants_table}""")
+spark.sql(f"""DROP TABLE IF EXISTS {constants_table}""")
           
 spark.sql(f"""
 CREATE TABLE IF NOT EXISTS {constants_table}
@@ -154,7 +161,7 @@ spark.sql(f"""
 
 # Set ownership of table to training group so all training users can recreate these credentials
 spark.sql(f"""
-ALTER TABLE {constants_table} SET OWNER TO training;""")
+ALTER TABLE {constants_table} SET OWNER TO `academy-23-24`;""")
 
 # COMMAND ----------
 
@@ -209,7 +216,7 @@ constants_df.write.insertInto(constants_table, overwrite=True)
 # MAGIC
 # MAGIC request_mistral_7b("What is databricks?")
 # MAGIC ```
-# MAGIC Or you could try using ai_query([doucmentation](https://docs.databricks.com/sql/language-manual/functions/ai_query.html)) to call this driver proxy from Databricks SQL with:
+# MAGIC Or you could try using ai_query([documentation](https://docs.databricks.com/sql/language-manual/functions/ai_query.html)) to call this driver proxy from Databricks SQL with:
 # MAGIC ```
 # MAGIC SELECT ai_query('cluster_id:port', -- TODO: fill in the cluster_id and port number from output above.  
 # MAGIC   named_struct('prompt', 'What is databricks?', 'temperature', CAST(0.1 AS Double)),

@@ -28,7 +28,8 @@
 # MAGIC https://www.kaggle.com/datasets/cynthiarempel/amazon-us-customer-reviews-dataset?resource=download&select=amazon_reviews_us_Camera_v1_00.tsv
 # MAGIC
 # MAGIC 2. Unzip the file
-# MAGIC 3. Upload the file to a new volume under Data, as a managed volume, at this path:
+# MAGIC 3. Gz the file
+# MAGIC 3. Upload the gz file to a new volume under Data, as a managed volume, at this path:
 # MAGIC /Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv.gz
 # MAGIC
 # MAGIC see images/upload_reviews_data_set.png for screenshot.
@@ -49,9 +50,13 @@ envsetup.setup_env(dbutils, spark)
 
 # COMMAND ----------
 
+# MAGIC %ls /Volumes/training/awsreviews/awsreviews/
+
+# COMMAND ----------
+
 import os
 
-REVIEWSFILE = "/Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv"
+REVIEWSFILE = "/Volumes/training/awsreviews/awsreviews/amazon_reviews_us_Camera_v1_00.tsv.gz"
 os.environ['REVIEWSFILE'] = REVIEWSFILE
 
 REVIEWS_DEST_PATH = "/Volumes/training/awsreviews/awsreviews/csvs" 
