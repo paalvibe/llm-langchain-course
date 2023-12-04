@@ -14,11 +14,6 @@
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## Install python libs
-
-# COMMAND ----------
-
 # MAGIC %pip install -U vllm==0.2.0 transformers==4.34.0 accelerate==0.20.3
 # MAGIC dbutils.library.restartPython()
 
@@ -37,11 +32,6 @@ model = "mistralai/Mistral-7B-Instruct-v0.1"
 revision = "3dc28cf29d2edd31a0a7b8f0b21637059815b4d5"
 
 llm = LLM(model=model, revision=revision)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Add instruction prompt with sys section as guard rail
 
 # COMMAND ----------
 
@@ -112,7 +102,7 @@ def serve_mistral_7b_instruct():
 from dbruntime.databricks_repl_context import get_context
 ctx = get_context()
 
-port = "7778"
+port = "8039"
 driver_proxy_api = f"https://{ctx.browserHostName}/driver-proxy-api/o/0/{ctx.clusterId}/{port}"
 
 print(f"""
@@ -131,19 +121,12 @@ port = {port}
 # COMMAND ----------
 
 # Create table in the metastore
-constants_table = "training.llm_langchain_shared.server1_constants"
+constants_table = "training.llm_langchain_shared.server6_constants"
 # DeltaTable.createIfNotExists(spark) \
 #   .tableName(constants_table) \
 #   .addColumn("key", "STRING") \
 #   .addColumn("val", "STRING")\
 #   .execute()
-
-catalog = "training"
-
-spark.sql(f"""
-CREATE CATALOG IF NOT EXISTS {catalog};
-""")
-
 
 schema = "training.llm_langchain_shared"
 # Grant select and modify permissions for the table to all users on the account.
@@ -171,7 +154,7 @@ spark.sql(f"""
 
 # Set ownership of table to training group so all training users can recreate these credentials
 spark.sql(f"""
-ALTER TABLE {constants_table} SET OWNER TO `academy-23-24`;""")
+ALTER TABLE {constants_table} SET OWNER TO training;""")
 
 # COMMAND ----------
 
@@ -182,7 +165,7 @@ print(host) # --> www.example.test
 
 # COMMAND ----------
 
-api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
+
 
 # COMMAND ----------
 
@@ -197,6 +180,7 @@ constants = [
 ]
 constants_df = spark.createDataFrame(constants)
 constants_df.write.insertInto(constants_table, overwrite=True)
+constants_df.show()
 
 # COMMAND ----------
 
@@ -226,7 +210,7 @@ constants_df.write.insertInto(constants_table, overwrite=True)
 # MAGIC
 # MAGIC request_mistral_7b("What is databricks?")
 # MAGIC ```
-# MAGIC Or you could try using ai_query([documentation](https://docs.databricks.com/sql/language-manual/functions/ai_query.html)) to call this driver proxy from Databricks SQL with:
+# MAGIC Or you could try using ai_query([doucmentation](https://docs.databricks.com/sql/language-manual/functions/ai_query.html)) to call this driver proxy from Databricks SQL with:
 # MAGIC ```
 # MAGIC SELECT ai_query('cluster_id:port', -- TODO: fill in the cluster_id and port number from output above.  
 # MAGIC   named_struct('prompt', 'What is databricks?', 'temperature', CAST(0.1 AS Double)),

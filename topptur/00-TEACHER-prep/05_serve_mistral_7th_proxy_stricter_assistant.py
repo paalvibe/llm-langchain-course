@@ -15,7 +15,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Install python libs
+# MAGIC ## Last python libs som trengs
 
 # COMMAND ----------
 
@@ -42,6 +42,8 @@ llm = LLM(model=model, revision=revision)
 
 # MAGIC %md
 # MAGIC ## Add instruction prompt with sys section as guard rail
+# MAGIC
+# MAGIC With a stricter personality on the assistant
 
 # COMMAND ----------
 
@@ -49,7 +51,7 @@ from vllm import SamplingParams
 
 # Prompt templates as follows could guide the model to follow instructions and respond to the input, and empirically it turns out to make Falcon models produce better responses
 DEFAULT_SYSTEM_PROMPT = """\
-You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
+You are a strict and demanding teacher. Always answer as efficiently as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased.
 
 If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."""
 
@@ -112,7 +114,7 @@ def serve_mistral_7b_instruct():
 from dbruntime.databricks_repl_context import get_context
 ctx = get_context()
 
-port = "7778"
+port = "7798"
 driver_proxy_api = f"https://{ctx.browserHostName}/driver-proxy-api/o/0/{ctx.clusterId}/{port}"
 
 print(f"""
@@ -131,7 +133,7 @@ port = {port}
 # COMMAND ----------
 
 # Create table in the metastore
-constants_table = "training.llm_langchain_shared.server1_constants"
+constants_table = "training.llm_langchain_shared.server_s1_constants"
 # DeltaTable.createIfNotExists(spark) \
 #   .tableName(constants_table) \
 #   .addColumn("key", "STRING") \
@@ -236,7 +238,7 @@ constants_df.write.insertInto(constants_table, overwrite=True)
 
 # COMMAND ----------
 
-app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
+# app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
 
 # COMMAND ----------
 
