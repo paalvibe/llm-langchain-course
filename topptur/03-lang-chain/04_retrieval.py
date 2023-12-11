@@ -70,12 +70,16 @@ llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api
 
 # COMMAND ----------
 
+# MAGIC %ls images
 
+# COMMAND ----------
+
+# MAGIC %pwd
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ![./images/rag_pipeline.png](Rag pipeline)
+# MAGIC ![Rag pipeline](https://raw.githubusercontent.com/paalvibe/llm-langchain-course/main/topptur/00-TEACHER-prep/images/rag_pipeline.png)
 
 # COMMAND ----------
 
