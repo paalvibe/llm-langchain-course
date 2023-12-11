@@ -126,7 +126,15 @@ port = {port}
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Store cluster vars as constants to retrieve in other notebooks
+# MAGIC ## Store cluster vars as constants to retrieve in other notebooks
+
+# COMMAND ----------
+
+# MAGIC %md Load training group name from global vars
+
+# COMMAND ----------
+
+# MAGIC %run ../libs/glob
 
 # COMMAND ----------
 
@@ -171,7 +179,7 @@ spark.sql(f"""
 
 # Set ownership of table to training group so all training users can recreate these credentials
 spark.sql(f"""
-ALTER TABLE {constants_table} SET OWNER TO `academy-23-24`;""")
+ALTER TABLE {constants_table} SET OWNER TO `{TRAINING_GROUP}`;""")
 
 # COMMAND ----------
 
