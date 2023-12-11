@@ -14,6 +14,11 @@
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Install python libs
+
+# COMMAND ----------
+
 # MAGIC %pip install -U vllm==0.2.0 transformers==4.34.0 accelerate==0.20.3
 # MAGIC dbutils.library.restartPython()
 
@@ -32,6 +37,11 @@ model = "mistralai/Mistral-7B-Instruct-v0.1"
 revision = "3dc28cf29d2edd31a0a7b8f0b21637059815b4d5"
 
 llm = LLM(model=model, revision=revision)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Add instruction prompt with sys section as guard rail
 
 # COMMAND ----------
 
@@ -116,52 +126,16 @@ port = {port}
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Store cluster vars as constants to retrieve in other notebooks
+# MAGIC ## Store cluster vars as constants to retrieve in other notebooks
+
+# COMMAND ----------
+
+# MAGIC %run ../libs/setup
 
 # COMMAND ----------
 
 # Create table in the metastore
-constants_table = "training.llm_langchain_shared.server1_constants"
-# DeltaTable.createIfNotExists(spark) \
-#   .tableName(constants_table) \
-#   .addColumn("key", "STRING") \
-#   .addColumn("val", "STRING")\
-#   .execute()
-
-catalog = "training"
-
-spark.sql(f"""
-CREATE CATALOG IF NOT EXISTS {catalog};
-""")
-
-
-schema = "training.llm_langchain_shared"
-# Grant select and modify permissions for the table to all users on the account.
-# This also works for other account-level groups and individual users.
-spark.sql(f"""
-CREATE SCHEMA IF NOT EXISTS {schema};
-""")
-
-spark.sql(f"""DROP TABLE IF EXISTS {constants_table}""")
-          
-spark.sql(f"""
-CREATE TABLE IF NOT EXISTS {constants_table}
-  (
-    name STRING,
-    var STRING
-  )""")
-
-
-# Grant select and modify permissions for the table to all users on the account.
-# This also works for other account-level groups and individual users.
-spark.sql(f"""
-  GRANT SELECT
-  ON TABLE {constants_table}
-  TO `account users`""")
-
-# Set ownership of table to training group so all training users can recreate these credentials
-spark.sql(f"""
-ALTER TABLE {constants_table} SET OWNER TO `academy-23-24`;""")
+constants_table = create_constants_table(server_name="server1")
 
 # COMMAND ----------
 
@@ -169,10 +143,6 @@ ALTER TABLE {constants_table} SET OWNER TO `academy-23-24`;""")
 from urllib.parse import urlparse
 host = urlparse(driver_proxy_api).netloc
 print(host) # --> www.example.test
-
-# COMMAND ----------
-
-api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 
 # COMMAND ----------
 

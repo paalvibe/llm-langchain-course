@@ -12,19 +12,12 @@
 
 # COMMAND ----------
 
-# Huggingface login not needed since open model
-# from huggingface_hub import notebook_login
-
-# # Login to Huggingface to get access to the model
-# notebook_login()
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC ## Summarize
 # MAGIC The example in the model card should also work on Databricks with the same environment.
 # MAGIC
 # MAGIC Takes about 8m on g4dn.xlarge cluster (16gb, 4 cores).
+# MAGIC When served from another GPU, you can run this notebook in a CPU cluster.
 
 # COMMAND ----------
 
@@ -37,7 +30,8 @@
 
 # COMMAND ----------
 
-constants_table = "training.llm_langchain_shared.server_constants"
+# server_num = 1 # Use same num as the group you have been given (1-6)
+constants_table = f"training.llm_langchain_shared.server{server_num}_constants"
 constants_df = spark.read.table(constants_table)
 display(constants_df)
 raw_dict = constants_df.toPandas().to_dict()
@@ -79,7 +73,7 @@ llm_context_chain = LLMChain(llm=llm, prompt=prompt_with_context)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Create summarization prompt
+# MAGIC ## Create summarization prompt
 
 # COMMAND ----------
 

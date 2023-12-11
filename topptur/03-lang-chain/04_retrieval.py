@@ -46,7 +46,8 @@
 
 # COMMAND ----------
 
-constants_table = "training.llm_langchain_shared.server_constants"
+# server_num = 1 # Use same num as the group you have been given (1-6)
+constants_table = f"training.llm_langchain_shared.server{server_num}_constants"
 constants_df = spark.read.table(constants_table)
 display(constants_df)
 raw_dict = constants_df.toPandas().to_dict()
@@ -70,12 +71,16 @@ llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api
 
 # COMMAND ----------
 
+# MAGIC %ls images
 
+# COMMAND ----------
+
+# MAGIC %pwd
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ![./images/rag_pipeline.png](Rag pipeline)
+# MAGIC ![Rag pipeline](https://raw.githubusercontent.com/paalvibe/llm-langchain-course/main/topptur/00-TEACHER-prep/images/rag_pipeline.png)
 
 # COMMAND ----------
 
@@ -121,7 +126,7 @@ from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddi
 # COMMAND ----------
 
 # Downloading embedding model 
-embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-zh-v1.5')
+embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-en-v1.5')
 
 # COMMAND ----------
 

@@ -28,6 +28,9 @@ spark.sql("CREATE CATALOG IF NOT EXISTS trainingmodels")
 
 # COMMAND ----------
 
+spark.sql("CREATE CATALOG IF NOT EXISTS training")
+# Set ownership of table to training group so all training users can recreate these credentials
+spark.sql(f"""GRANT USE CATALOG ON CATALOG training TO `account users`;""")
 
 
 # COMMAND ----------

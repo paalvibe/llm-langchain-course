@@ -26,7 +26,8 @@
 
 # COMMAND ----------
 
-constants_table = "training.llm_langchain_shared.server_constants"
+server_num = 1 # Use same num as the group you have been given (1-6)
+constants_table = f"training.llm_langchain_shared.server{server_num}_constants"
 constants_df = spark.read.table(constants_table)
 display(constants_df)
 raw_dict = constants_df.toPandas().to_dict()
@@ -46,6 +47,11 @@ llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api
 
 # COMMAND ----------
 
+# MAGIC %md 
+# MAGIC ## Prompt parameters
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC
 # MAGIC You can create a prompt that either has only an instruction or has an instruction with context:
@@ -56,7 +62,7 @@ from langchain import PromptTemplate, LLMChain
 from langchain.llms import HuggingFacePipeline
 from langchain.llms import Databricks
 
-# template for an instrution with no input
+# template for an instruction with no input
 prompt = PromptTemplate(
     input_variables=["instruction"],
     template="{instruction}")
@@ -115,6 +121,24 @@ print(llm_context_chain.predict(instruction="What characterized Haakon IV Haakon
 
 # MAGIC %md
 # MAGIC
+# MAGIC ## Question to compare with embeddings task later
+
+# COMMAND ----------
+
+print(llm_context_chain.predict(instruction="How did Harald Hardrade help the Icelanders?", context="").lstrip())
+
+# COMMAND ----------
+
+print(llm_context_chain.predict(instruction="Who was Harald Hardrade a brother of?", context="").lstrip())
+
+# COMMAND ----------
+
+print(llm_context_chain.predict(instruction="When did Harald Hardrade marry Ellisif?", context="").lstrip())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
 # MAGIC ## Task:
 # MAGIC
 # MAGIC Play around with the context and the instructions.
@@ -127,7 +151,7 @@ print(llm_context_chain.predict(instruction="What characterized Haakon IV Haakon
 
 # MAGIC %md
 # MAGIC
-# MAGIC ## Task: Get a good answer about Knowit
+# MAGIC ## Task: Get a good answer about Entur
 
 # COMMAND ----------
 

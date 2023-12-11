@@ -70,7 +70,7 @@ llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ![./images/rag_pipeline.png](Rag pipeline)
+# MAGIC ![Rag pipeline](https://raw.githubusercontent.com/paalvibe/llm-langchain-course/main/topptur/00-TEACHER-prep/images/rag_pipeline.png)
 
 # COMMAND ----------
 
@@ -115,8 +115,8 @@ from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddi
 
 # COMMAND ----------
 
-# Downloading embedding model 
-embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-zh-v1.5')
+# Downloading embedding model
+embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-en-v1.5')
 
 # COMMAND ----------
 
@@ -254,6 +254,10 @@ len(unique_docs)
 
 # MAGIC %md
 # MAGIC Ok now let's put those docs into a prompt template which we'll use as context
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
