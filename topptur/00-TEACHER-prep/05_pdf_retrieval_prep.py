@@ -37,7 +37,7 @@
 # COMMAND ----------
 
 # MAGIC %pip install -q -U langchain
-# MAGIC %pip install sentence-transformers unstructured chromadb
+# MAGIC %pip install sentence-transformers unstructured chromadb "unstructured[pdf]"
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -165,8 +165,8 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC rm -rf ./test_vector_db
-# MAGIC mkdir -p ./test_vector_db
+# MAGIC rm -rf ./snorre_vector_db
+# MAGIC mkdir -p ./snorre_vector_db
 
 # COMMAND ----------
 
@@ -176,7 +176,7 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 # Didnt get it to write straight to dfgs. Chroma gives IO Error or stores dbfs as a dir name
 # persist_path = "dbfs:/Volumes/training/data/langchain/test_vector_db/"
 # Cannot write to /tmp either, Chroma DB gives (cannot write to read only db error)
-persist_path = "./test_vector_db"
+persist_path = "./snorre_vector_db"
 # embedding = OpenAIEmbeddings()
 vectordb_persisted = Chroma.from_documents(documents=splits, 
                                  embedding=embedding_model,
@@ -191,9 +191,9 @@ vectordb = Chroma(persist_directory=persist_path,
 # MAGIC %sh
 # MAGIC # Clean old dir
 # MAGIC mkdir -p /Volumes/training/data/langchain
-# MAGIC rm -rf /Volumes/training/data/langchain/test_vector_db
+# MAGIC rm -rf /Volumes/training/data/langchain/snorre_vector_db
 # MAGIC # Move files to volume, to avoid adding to git
-# MAGIC cp -r ./test_vector_db /Volumes/training/data/langchain/test_vector_db
+# MAGIC cp -r ./snorre_vector_db /Volumes/training/data/langchain/snorre_vector_db
 
 # COMMAND ----------
 
@@ -227,28 +227,16 @@ logging.getLogger("langchain.retrievers.multi_query").setLevel(logging.INFO)
 
 # COMMAND ----------
 
-question = "What is the authors view on the early stages of a startup?"
+question = "How did Harald Hardrade help the Icelanders?"
+# question = "Which year did Harald Hardrade leave Norway?"
+#question = "Who was the longest reigning king in Norway, according to Snorre? How long did he reign? How did he die? Who was his father?"
 # llm = ChatOpenAI(temperature=0)
 
 retriever_from_llm = MultiQueryRetriever.from_llm(
     retriever=vectordb.as_retriever(), llm=llm
 )
 
-# COMMAND ----------
-
 unique_docs = retriever_from_llm.get_relevant_documents(query=question)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC Check out how there are other questions which are related to but slightly different than the question I asked.
-# MAGIC
-# MAGIC Let's see how many docs were actually returned
-
-# COMMAND ----------
-
-# Should return 9
-len(unique_docs)
 
 # COMMAND ----------
 
@@ -277,12 +265,42 @@ llm.predict(text=PROMPT.format_prompt(
 
 # COMMAND ----------
 
+Copy last cell and transform to sql
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC ## Another question with multi-retrieval
+
+# COMMAND ----------
+
+question = "Who was Harald Hardrade a brother of?"
+unique_docs = retriever_from_llm.get_relevant_documents(query=question)
+ret = llm.predict(text=PROMPT.format_prompt(
+    context=unique_docs,
+    question=question
+).text)
+ret
+
+# COMMAND ----------
+
+question = "When did Harald Hardrade marry Ellisif?"
+unique_docs = retriever_from_llm.get_relevant_documents(query=question)
+ret = llm.predict(text=PROMPT.format_prompt(
+    context=unique_docs,
+    question=question
+).text)
+print(ret)
+
+# COMMAND ----------
+
 # MAGIC %md ## Clean up git repo from vector files
 
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC rm -rf ./test_vector_db
+# MAGIC # rm -rf ./snorre_vector_db
 
 # COMMAND ----------
 

@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Use langchain with llm served from Databricks
+# MAGIC # Use langchain with stricker llm served from Databricks
 # MAGIC
 # MAGIC We use a mistral model served from another cluster which has GPU.
 # MAGIC
@@ -26,7 +26,7 @@
 
 # COMMAND ----------
 
-constants_table = "training.llm_langchain_shared.server1_constants"
+constants_table = "training.llm_langchain_shared.server_s1_constants"
 constants_df = spark.read.table(constants_table)
 display(constants_df)
 raw_dict = constants_df.toPandas().to_dict()
