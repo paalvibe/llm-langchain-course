@@ -2,17 +2,18 @@
 # MAGIC %md
 # MAGIC # Advanced retrieval from a pdf with langchain on Databricks
 # MAGIC
+# MAGIC ### Source Snorre Saga as PDF
+# MAGIC
+# MAGIC You can search Snorre Saga online here: [https://www.gutenberg.org/files/598/598-h/598-h.htm](https://www.gutenberg.org/files/598/598-h/598-h.htm)
+# MAGIC
+# MAGIC ### Model
 # MAGIC We use a mistral model served from another cluster which has GPU.
 # MAGIC
 # MAGIC Can be run on a non-gpu cluster like UC Shared Cluster 1.
-# MAGIC
-# MAGIC ## What is Langchain?
-# MAGIC
-# MAGIC LangChain is an intuitive open-source Python framework build automation around LLMs), and allows you to build dynamic, data-responsive applications that harness the most recent breakthroughs in natural language processing.
-# MAGIC
-# MAGIC Examples from here:
-# MAGIC
-# MAGIC https://github.com/gkamradt/langchain-tutorials/blob/main/LangChain%20Cookbook%20Part%201%20-%20Fundamentals.ipynb
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
@@ -175,16 +176,13 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 # MAGIC # Chroma does not know how to access dbfs
 # MAGIC rm -rf ./snorre_vector_db
 # MAGIC cp -r /Volumes/training/data/langchain/snorre_vector_db snorre_vector_db
+# MAGIC ls -lh ./snorre_vector_db/*
 
 # COMMAND ----------
 
 persist_path = "./snorre_vector_db"
 vectordb = Chroma(persist_directory=persist_path,
                     embedding_function=embedding_model)
-
-# COMMAND ----------
-
-
 
 # COMMAND ----------
 
@@ -271,7 +269,7 @@ llm.predict(text=PROMPT.format_prompt(
 
 # COMMAND ----------
 
-question = "Who was Snorre?"
+question = "Where did Gyda, daughter of King Eirik of Hordaland, grow up?"
 unique_docs = retriever_from_llm.get_relevant_documents(query=question)
 ret = llm.predict(text=PROMPT.format_prompt(
     context=unique_docs,
@@ -283,9 +281,9 @@ ret
 
 # MAGIC %md
 # MAGIC ## Task: By changing the question, try to get good answers to: 
-# MAGIC 1. When Harald and his wife got married?
-# MAGIC 2. When Harald ruled Norway?
-# MAGIC 3. What position Harald held in constantinople?
+# MAGIC 1. When Harald Hardrade and his wife Ellisif got married?
+# MAGIC 2. When did Olav Tryggvason rule Norway?
+# MAGIC 3. What position did Harald hold in constantinople?
 
 # COMMAND ----------
 
