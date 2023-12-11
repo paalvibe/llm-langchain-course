@@ -48,7 +48,8 @@
 
 # COMMAND ----------
 
-constants_table = "training.llm_langchain_shared.server1_constants"
+# server_num = 1 # Use same num as the group you have been given (1-6)
+constants_table = f"training.llm_langchain_shared.server{server_num}_constants"
 constants_df = spark.read.table(constants_table)
 display(constants_df)
 raw_dict = constants_df.toPandas().to_dict()
