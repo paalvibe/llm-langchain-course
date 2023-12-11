@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC We use a mistral model served from another cluster which has GPU.
 # MAGIC
-# MAGIC Can be run on a non-gpu cluster.
+# MAGIC Can be run on a non-gpu cluster like UC Shared Cluster 1.
 # MAGIC
 # MAGIC ## What is Langchain?
 # MAGIC
@@ -48,6 +48,7 @@
 
 constants_table = "training.llm_langchain_shared.server1_constants"
 constants_df = spark.read.table(constants_table)
+display(constants_df)
 raw_dict = constants_df.toPandas().to_dict()
 names = raw_dict['name'].values()
 vars = raw_dict['var'].values()
@@ -55,6 +56,7 @@ constants = dict(zip(names, vars))
 cluster_id = constants['cluster_id']
 port = constants['port']
 host = constants['host']
+api_token = constants['api_token']
 
 # COMMAND ----------
 
@@ -64,8 +66,11 @@ host = constants['host']
 
 from langchain import PromptTemplate, LLMChain
 from langchain.llms import Databricks
-api_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api_token=api_token,)
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
@@ -111,12 +116,24 @@ from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddi
 # MAGIC
 # MAGIC
 # MAGIC # Downloading embedding model 
-# MAGIC embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-en-v1.5')
+# MAGIC embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-zh-v1.5')
 
 # COMMAND ----------
 
 # Downloading embedding model 
 embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-en-v1.5')
+
+# COMMAND ----------
+
+# MAGIC %md ## Load vector DB
+# MAGIC
+# MAGIC A vector db of a Snorre Saga pdf has been prepared in ../00-Teacher-prep/05_pdf_retrieval_prep
+# MAGIC
+# MAGIC Embeddings vector DB allows us to interact with large texts.
+
+# COMMAND ----------
+
+# MAGIC %ls ../../data/Sagas/
 
 # COMMAND ----------
 
@@ -149,56 +166,30 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC
-# MAGIC USE CATALOG training;
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC
-# MAGIC CREATE SCHEMA IF NOT EXISTS data;
-# MAGIC use schema data;
-# MAGIC CREATE VOLUME IF NOT EXISTS langchain
-# MAGIC     COMMENT 'Volume for langchain example data';
+# MAGIC %ls -lh /Volumes/training/data/langchain/snorre_vector_db
 
 # COMMAND ----------
 
 # MAGIC %sh
+# MAGIC # Make local copy of test_vector_db, prepped by teacher
+# MAGIC # Chroma does not know how to access dbfs
 # MAGIC rm -rf ./snorre_vector_db
-# MAGIC mkdir -p ./snorre_vector_db
+# MAGIC cp -r /Volumes/training/data/langchain/snorre_vector_db snorre_vector_db
 
 # COMMAND ----------
 
-# if 'vectordb_persisted' in globals(): # If you've already made your vectordb this will delete it so you start fresh
-#     vectordb_persisted.delete_collection()
-
-# Didnt get it to write straight to dfgs. Chroma gives IO Error or stores dbfs as a dir name
-# persist_path = "dbfs:/Volumes/training/data/langchain/test_vector_db/"
-# Cannot write to /tmp either, Chroma DB gives (cannot write to read only db error)
 persist_path = "./snorre_vector_db"
-# embedding = OpenAIEmbeddings()
-vectordb_persisted = Chroma.from_documents(documents=splits, 
-                                 embedding=embedding_model,
-                                 persist_directory=persist_path)
-vectordb_persisted.persist()
-# vectordb_persisted = None
 vectordb = Chroma(persist_directory=persist_path,
                     embedding_function=embedding_model)
 
 # COMMAND ----------
 
-# MAGIC %sh
-# MAGIC # Clean old dir
-# MAGIC mkdir -p /Volumes/training/data/langchain
-# MAGIC rm -rf /Volumes/training/data/langchain/snorre_vector_db
-# MAGIC # Move files to volume, to avoid adding to git
-# MAGIC cp -r ./snorre_vector_db /Volumes/training/data/langchain/snorre_vector_db
+
 
 # COMMAND ----------
 
 # MAGIC %md 
-# MAGIC ## Test MultiQuery to evaluate vectordb
+# MAGIC ## MultiQuery
 # MAGIC This retrieval method will generated 3 additional questions to get a total of 4 queries (with the users included) that will be used to go retrieve documents. This is helpful when you want to retrieve documents which are similar in meaning to your question.
 # MAGIC
 
@@ -228,15 +219,24 @@ logging.getLogger("langchain.retrievers.multi_query").setLevel(logging.INFO)
 # COMMAND ----------
 
 question = "How did Harald Hardrade help the Icelanders?"
-# question = "Which year did Harald Hardrade leave Norway?"
-#question = "Who was the longest reigning king in Norway, according to Snorre? How long did he reign? How did he die? Who was his father?"
 # llm = ChatOpenAI(temperature=0)
 
 retriever_from_llm = MultiQueryRetriever.from_llm(
     retriever=vectordb.as_retriever(), llm=llm
 )
-
 unique_docs = retriever_from_llm.get_relevant_documents(query=question)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Check out how there are other questions which are related to but slightly different than the question I asked.
+# MAGIC
+# MAGIC Let's see how many docs were actually returned
+
+# COMMAND ----------
+
+# Should be more than 0
+len(unique_docs)
 
 # COMMAND ----------
 
@@ -271,7 +271,7 @@ llm.predict(text=PROMPT.format_prompt(
 
 # COMMAND ----------
 
-question = "Who was the wife of Hardrade?"
+question = "Who was Snorre?"
 unique_docs = retriever_from_llm.get_relevant_documents(query=question)
 ret = llm.predict(text=PROMPT.format_prompt(
     context=unique_docs,
@@ -281,12 +281,76 @@ ret
 
 # COMMAND ----------
 
-# MAGIC %md ## Clean up git repo from vector files
+# MAGIC %md
+# MAGIC ## Task: By changing the question, try to get good answers to: 
+# MAGIC 1. When Harald and his wife got married?
+# MAGIC 2. When Harald ruled Norway?
+# MAGIC 3. What position Harald held in constantinople?
 
 # COMMAND ----------
 
-# MAGIC %sh
-# MAGIC # rm -rf ./snorre_vector_db
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC ## TODO Contextual Compression
+# MAGIC Then we'll move onto contextual compression. This will take the chunk that you've made (above) and compress it's information down to the parts relevant to your query.
+# MAGIC
+# MAGIC Say that you have a chunk that has 3 topics within it, you only really care about one of them though, this compressor will look at your query, see that you only need one of the 3 topics, then extract & return that one topic.
+# MAGIC
+# MAGIC This one is a bit more expensive because each doc returned will get processed an additional time (to pull out the relevant data)
+
+# COMMAND ----------
+
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
+
+# COMMAND ----------
+
+# MAGIC %md We first need to set up our compressor, it's cool that it's a separate object because that means you can use it elsewhere outside this retriever as well.
+
+# COMMAND ----------
+
+# llm = ChatOpenAI(temperature=0, model='gpt-4')
+
+compressor = LLMChainExtractor.from_llm(llm)
+compression_retriever = ContextualCompressionRetriever(base_compressor=compressor,
+                                                       base_retriever=vectordb.as_retriever())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC First, an example of compression. Below we have one of our splits that we made above
+
+# COMMAND ----------
+
+splits[0].page_content
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Now we are going to pass a question to it and with that question we will compress the doc. The cool part is this doc will be contextually compressed, meaning the resulting file will only have the information relevant to the question.
+
+# COMMAND ----------
+
+compressor.compress_documents(documents=[splits[0]], query="test for what you like to do")
 
 # COMMAND ----------
 

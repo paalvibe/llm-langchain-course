@@ -121,7 +121,7 @@ from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddi
 # COMMAND ----------
 
 # Downloading embedding model 
-embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-zh-v1.5')
+embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-en-v1.5')
 
 # COMMAND ----------
 
