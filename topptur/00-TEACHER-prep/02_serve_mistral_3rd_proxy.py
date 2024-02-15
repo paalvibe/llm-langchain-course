@@ -89,13 +89,30 @@ print(gen_text_for_serving("How to master Python in 3 days?", temperature=0.1, m
 # COMMAND ----------
 
 from flask import Flask, jsonify, request
+# from threading import Semaphore
+import time
 
 app = Flask("mistral-7b-instruct")
 
+semaphore = 0
+
+
 @app.route('/', methods=['POST'])
 def serve_mistral_7b_instruct():
+  global semaphore
+  safety = 0
+  print(f"acquire semaphore: {semaphore}")
+  while semaphore > 0 and safety < 100:
+    safety = safety + 1
+    print(f"semaphore: {semaphore}, safety: {safety}")
+    time.sleep(3)
+  semaphore = 1
   resp = gen_text_for_serving(**request.json)
+  print(f"release semaphore: {semaphore}")
+  semaphore = 0
+  print(f"semaphore released: {semaphore}")
   return jsonify(resp)
+
 
 # COMMAND ----------
 
