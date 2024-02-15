@@ -7,7 +7,7 @@
 # MAGIC You can search Snorre Saga online here: [https://www.gutenberg.org/files/598/598-h/598-h.htm](https://www.gutenberg.org/files/598/598-h/598-h.htm)
 # MAGIC
 # MAGIC ### Model
-# MAGIC We use a mistral model served from another cluster which has GPU.
+# MAGIC We use OpenAI.
 # MAGIC
 # MAGIC Can be run on a non-gpu cluster like UC Shared Cluster 1.
 
@@ -38,47 +38,30 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -U langchain
-# MAGIC %pip install sentence-transformers unstructured chromadb "unstructured[pdf]"
+# MAGIC %pip install -qU \
+# MAGIC     langchain==0.1.1 \
+# MAGIC     langchain-community==0.0.13 \
+# MAGIC     datasets==2.14.6 \
+# MAGIC     openai==1.6.1 \
+# MAGIC     tiktoken==0.5.2 \
+# MAGIC     chromadb==0.4.22 \
+# MAGIC     mlflow==2.10.2 \
+# MAGIC     unstructured \
+# MAGIC     sentence_transformers \
+# MAGIC     "unstructured[pdf]"
+# MAGIC  
+# MAGIC #%pip install -q -U langchain
+# MAGIC #%pip install sentence-transformers unstructured chromadb mlflow openai
 # MAGIC dbutils.library.restartPython()
-
-# COMMAND ----------
-
-# MAGIC %md Get llm server constants from constants table
-
-# COMMAND ----------
-
-# server_num = 1 # Use same num as the group you have been given (1-6)
-constants_table = f"training.llm_langchain_shared.server{server_num}_constants"
-constants_df = spark.read.table(constants_table)
-display(constants_df)
-raw_dict = constants_df.toPandas().to_dict()
-names = raw_dict['name'].values()
-vars = raw_dict['var'].values()
-constants = dict(zip(names, vars))
-cluster_id = constants['cluster_id']
-port = constants['port']
-host = constants['host']
-api_token = constants['api_token']
-
-# COMMAND ----------
-
-# MAGIC %md Create llm object connecting to mistral server
 
 # COMMAND ----------
 
 from langchain import PromptTemplate, LLMChain
 from langchain.llms import Databricks
-llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api_token=api_token,)
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ![./images/rag_pipeline.png](Rag pipeline)
+import os
+os.environ["DATABRICKS_TOKEN"] = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
+host = spark.conf.get("spark.databricks.workspaceUrl")
+llm = Databricks(host=host, endpoint_name="azure_openai_training", max_tokens=1024)
 
 # COMMAND ----------
 
@@ -106,20 +89,17 @@ llm = Databricks(host=host, cluster_id=cluster_id, cluster_driver_port=port, api
 # COMMAND ----------
 
 from langchain.document_loaders import DirectoryLoader
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
 from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddings
 
 # COMMAND ----------
 
-# MAGIC %md Download an Embedding Model
+# MAGIC %md
+# MAGIC # Downloading embedding model from HuggingFace
 # MAGIC
 # MAGIC I am using the best embedding model on Huggingface’s embedding leaderboard. Feel free to use another.
-# MAGIC
-# MAGIC
-# MAGIC # Downloading embedding model 
-# MAGIC embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-zh-v1.5')
 
 # COMMAND ----------
 
@@ -258,7 +238,53 @@ PROMPT = PromptTemplate(
 
 # COMMAND ----------
 
-llm.predict(text=PROMPT.format_prompt(
+# MAGIC %md
+# MAGIC # ChatGPT 3.5 cannot process enough tokens
+# MAGIC ```
+# MAGIC llm.predict(text=PROMPT.format_prompt(
+# MAGIC     context=unique_docs,
+# MAGIC     question=question
+# MAGIC ).text)
+# MAGIC ...
+# MAGIC Error code: 400 - {'error': {'message': "This model's maximum context length is 4097 tokens, however you requested 4606 tokens (4350 in your prompt; 256 for the completion). Please reduce your prompt; or completion length.", 'type': 'invalid_request_error', 'param': None, 'code': None}}
+# MAGIC
+# MAGIC ```
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Get a more powerful model
+# MAGIC
+# MAGIC GPT-4 does support completions API, and we were not able to get sensible replies from the context,
+# MAGIC so instead we use open source mistral model, served from a GPU VM.
+# MAGIC
+# MAGIC OpenAI Models: https://platform.openai.com/docs/models/gpt-3-5-turbo
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Get locally served mistral model
+
+# COMMAND ----------
+
+from topptur.libs import llmlocal
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC #### Select a server number between 1-4
+# MAGIC
+# MAGIC We should spread out across GPUs
+
+# COMMAND ----------
+
+# server_num = 1
+power_llm = llmlocal.llmlocal(server_name="server", server_num=server_num, spark=spark)
+
+# COMMAND ----------
+
+# Test invocation with context
+power_llm.predict(text=PROMPT.format_prompt(
     context=unique_docs,
     question=question
 ).text)
@@ -273,7 +299,7 @@ llm.predict(text=PROMPT.format_prompt(
 
 question = "Where did Gyda, daughter of King Eirik of Hordaland, grow up?"
 unique_docs = retriever_from_llm.get_relevant_documents(query=question)
-ret = llm.predict(text=PROMPT.format_prompt(
+ret = power_llm.predict(text=PROMPT.format_prompt(
     context=unique_docs,
     question=question
 ).text)
@@ -310,7 +336,7 @@ ret
 # COMMAND ----------
 
 # MAGIC %md 
-# MAGIC ## TODO Contextual Compression
+# MAGIC ## NOT READY TODO Contextual Compression
 # MAGIC Then we'll move onto contextual compression. This will take the chunk that you've made (above) and compress it's information down to the parts relevant to your query.
 # MAGIC
 # MAGIC Say that you have a chunk that has 3 topics within it, you only really care about one of them though, this compressor will look at your query, see that you only need one of the 3 topics, then extract & return that one topic.
