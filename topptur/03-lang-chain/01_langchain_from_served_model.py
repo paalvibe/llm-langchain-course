@@ -17,7 +17,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -U langchain mlflow
+# MAGIC %pip install -q -U langchain mlflow langchain-community langchain-core
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -37,7 +37,7 @@
 # MAGIC
 # MAGIC llm = LLM(model=model, revision=revision)
 # MAGIC ``````
-
+# MAGIC
 
 # COMMAND ----------
 

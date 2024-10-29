@@ -21,7 +21,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -U langchain
+# MAGIC %pip install -q -U langchain langchain-core langchain-community
 # MAGIC %pip install -q -U mlflow
 # MAGIC dbutils.library.restartPython()
 
