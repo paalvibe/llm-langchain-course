@@ -3,7 +3,7 @@
 
 # COMMAND ----------
 
-TRAINING_GROUP = "external_workshop_202312"
+TRAINING_GROUP = "dataops-workshop"
 print(f"TRAINING_GROUP: {TRAINING_GROUP}")
 
 # COMMAND ----------

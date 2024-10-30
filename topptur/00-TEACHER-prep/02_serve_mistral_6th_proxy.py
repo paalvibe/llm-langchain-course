@@ -8,7 +8,7 @@
 # MAGIC [vllm](https://github.com/vllm-project/vllm/tree/main) is an open-source library that makes LLM inference fast with various optimizations.
 # MAGIC
 # MAGIC Environment for this notebook:
-# MAGIC - Runtime: 14.0 GPU ML Runtime
+# MAGIC - Runtime: 14.1 ML GPU Runtime
 # MAGIC - Instance: `g5.xlarge` on AWS, `Standard_NV36ads_A10_v5` on Azure
 # MAGIC - Will not run on g4dn.4xlarge
 
@@ -22,6 +22,13 @@
 # MAGIC %md
 # MAGIC ## Inference
 # MAGIC The example in the model card should also work on Databricks with the same environment.
+
+# COMMAND ----------
+
+hf_token = dbutils.secrets.get(scope="hugging-face", key="huggingfacekey")
+from huggingface_hub import login
+access_token_read = hf_token
+login(token = access_token_read)
 
 # COMMAND ----------
 

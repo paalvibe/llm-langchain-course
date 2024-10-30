@@ -8,7 +8,7 @@
 # MAGIC [vllm](https://github.com/vllm-project/vllm/tree/main) is an open-source library that makes LLM inference fast with various optimizations.
 # MAGIC
 # MAGIC Environment for this notebook:
-# MAGIC - Runtime: 14.0 GPU ML Runtime
+# MAGIC - Runtime: 14.1 ML GPU Runtime
 # MAGIC - Instance: `g5.xlarge` on AWS, `Standard_NV36ads_A10_v5` on Azure
 # MAGIC - Will not run on g4dn.4xlarge
 
@@ -20,6 +20,7 @@
 # COMMAND ----------
 
 # MAGIC %pip install -U vllm==0.2.0 transformers==4.34.0 accelerate==0.20.3
+# MAGIC %pip install tokenizers
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -30,9 +31,18 @@
 
 # COMMAND ----------
 
+hf_token = dbutils.secrets.get(scope="hugging-face", key="huggingfacekey")
+from huggingface_hub import login
+access_token_read = hf_token
+login(token = access_token_read)
+
+# COMMAND ----------
+
 from vllm import LLM
 
-# it is suggested to pin the revision commit hash and not change it for reproducibility because the uploader might change the model afterwards; you can find the commmit history of Mistral-7B-Instruct-v0. in https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1/commits/main
+# it is suggested to pin the revision commit hash and not change it for reproducibility because the uploader might change the model afterwards; you can find the commmit history of Mistral-7B-Instruct-v0. in https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3/commits/main
+# model = "mistralai/Mistral-7B-Instruct-v0.3"
+# revision = "e0bc86c23ce5aae1db576c8cca6f06f1f73af2db"
 model = "mistralai/Mistral-7B-Instruct-v0.1"
 revision = "3dc28cf29d2edd31a0a7b8f0b21637059815b4d5"
 
