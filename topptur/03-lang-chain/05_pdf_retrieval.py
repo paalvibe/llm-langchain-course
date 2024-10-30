@@ -267,6 +267,12 @@ PROMPT = PromptTemplate(
 
 # COMMAND ----------
 
+# Enable live reloading of libs
+%load_ext autoreload
+%autoreload 2
+
+# COMMAND ----------
+
 from topptur.libs import llmlocal
 
 # COMMAND ----------
@@ -278,7 +284,7 @@ from topptur.libs import llmlocal
 
 # COMMAND ----------
 
-# server_num = 1
+server_num = 3
 power_llm = llmlocal.llmlocal(server_name="server", server_num=server_num, spark=spark)
 
 # COMMAND ----------

@@ -154,7 +154,10 @@ print (f"Your {len(docs)} documents have been split into {len(splits)} chunks")
 
 # MAGIC %md #### Adding embeddings to Chroma
 # MAGIC
-# MAGIC This can take some time
+# MAGIC It has already been vectorized by the teacher, so the prepared `chroma.sqlite3` file,
+# MAGIC with all the embbedings already indexed, is just copied to the local chromadb persistance location.
+# MAGIC
+# MAGIC It is prepared by the teacher in the notebook `topptur/00-TEACHER-prep/04_retrieval_prep`.
 
 # COMMAND ----------
 
@@ -316,6 +319,12 @@ PROMPT = PromptTemplate(
 
 # MAGIC %md
 # MAGIC ### Get locally served mistral model
+
+# COMMAND ----------
+
+# Enable live reloading of libs
+%load_ext autoreload
+%autoreload 2
 
 # COMMAND ----------
 
