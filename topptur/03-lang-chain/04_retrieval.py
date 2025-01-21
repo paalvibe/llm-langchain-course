@@ -4,15 +4,8 @@
 # MAGIC
 # MAGIC We use a databricks proxy endpoint in front of OpenAI ChatGPT service.
 # MAGIC
-# MAGIC Can be run on a non-gpu cluster like UC Shared Cluster 1.
+# MAGIC Can be run on a non-gpu cluster or Serverless.
 # MAGIC
-# MAGIC ## What is Langchain?
-# MAGIC
-# MAGIC LangChain is an intuitive open-source Python framework build automation around LLMs), and allows you to build dynamic, data-responsive applications that harness the most recent breakthroughs in natural language processing.
-# MAGIC
-# MAGIC Examples from here:
-# MAGIC
-# MAGIC https://github.com/gkamradt/langchain-tutorials/blob/main/LangChain%20Cookbook%20Part%201%20-%20Fundamentals.ipynb
 
 # COMMAND ----------
 
@@ -125,6 +118,18 @@ embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-en-v1
 # COMMAND ----------
 
 # MAGIC %ls ../../data/
+
+# COMMAND ----------
+
+# MAGIC %sh 
+# MAGIC cp -r '../../data/PaulGrahamEssaysLarge/' /tmp/PaulGrahamEssaysLarge
+
+# COMMAND ----------
+
+# Install packages need to avoid errors like LookupError(resource_not_found)
+import nltk
+nltk.download('punkt_tab')
+nltk.download('averaged_perceptron_tagger_eng')
 
 # COMMAND ----------
 
@@ -440,18 +445,6 @@ power_llm.predict(text=PROMPT.format_prompt(
 # MAGIC ## Task
 # MAGIC
 # MAGIC Change the QUERY_PROMPT to improve the results.
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
 
 # COMMAND ----------
 

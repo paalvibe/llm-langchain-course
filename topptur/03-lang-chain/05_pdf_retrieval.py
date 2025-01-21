@@ -120,6 +120,12 @@ embedding_model = SentenceTransformerEmbeddings(model_name='BAAI/bge-large-en-v1
 
 # COMMAND ----------
 
+import nltk
+nltk.download('punkt_tab')
+nltk.download('averaged_perceptron_tagger_eng')
+
+# COMMAND ----------
+
 loader = DirectoryLoader('../../data/Sagas/', glob="**/*.pdf", show_progress=True)
 
 docs = loader.load()
@@ -284,7 +290,7 @@ from topptur.libs import llmlocal
 
 # COMMAND ----------
 
-server_num = 3
+# server_num = 1
 power_llm = llmlocal.llmlocal(server_name="server", server_num=server_num, spark=spark)
 
 # COMMAND ----------
