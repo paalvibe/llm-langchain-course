@@ -31,7 +31,7 @@
 
 # MAGIC %md This is how you would used an open model instead
 # MAGIC
-# MAGIC We currently use OpenAI service, since we exhaust our GPU limitations when training too many people in parallel.
+# MAGIC We currently use OpenAI service (GPT 3.5), since we exhaust our GPU limitations when training too many people in parallel.
 # MAGIC
 # MAGIC To use an open model, the llm can be run like this, but must be done run with a GPU
 # MAGIC
@@ -53,7 +53,7 @@ from langchain import PromptTemplate, LLMChain
 from langchain.llms import Databricks
 os.environ["DATABRICKS_TOKEN"] = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 host = spark.conf.get("spark.databricks.workspaceUrl")
-llm = Databricks(host=host, endpoint_name="azure_openai_training", max_tokens=1024)
+llm = Databricks(host=host, endpoint_name="azure_openai_training", max_tokens=1024)  # GPT 3.5
 
 # COMMAND ----------
 

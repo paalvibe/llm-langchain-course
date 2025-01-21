@@ -5,14 +5,6 @@
 # MAGIC We use a databricks proxy endpoint in front of OpenAI ChatGPT service.
 # MAGIC
 # MAGIC Can be run on a non-gpu cluster.
-# MAGIC
-# MAGIC ## What is Langchain?
-# MAGIC
-# MAGIC LangChain is an intuitive open-source Python framework build automation around LLMs), and allows you to build dynamic, data-responsive applications that harness the most recent breakthroughs in natural language processing.
-# MAGIC
-# MAGIC Examples from here:
-# MAGIC
-# MAGIC https://github.com/gkamradt/langchain-tutorials/blob/main/LangChain%20Cookbook%20Part%201%20-%20Fundamentals.ipynb
 
 # COMMAND ----------
 

@@ -12,15 +12,6 @@
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## Summarize
-# MAGIC The example in the model card should also work on Databricks with the same environment.
-# MAGIC
-# MAGIC Takes about 8m on g4dn.xlarge cluster (16gb, 4 cores).
-# MAGIC When served from another GPU, you can run this notebook in a CPU cluster.
-
-# COMMAND ----------
-
 # MAGIC %pip install -q -U langchain langchain-core langchain-community
 # MAGIC %pip install -q -U mlflow
 # MAGIC dbutils.library.restartPython()
