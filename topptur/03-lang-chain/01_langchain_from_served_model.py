@@ -13,6 +13,13 @@
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Connect to Serverless
+# MAGIC
+# MAGIC Select Serverless from the Cluster drop down, next to the Run button on the top right menu.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Inference examples
 
 # COMMAND ----------
